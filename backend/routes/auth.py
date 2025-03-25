@@ -1,12 +1,12 @@
+# routes/auth.py
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-from app import db
-from models import User
 
 auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
+    from models import User  # Import here
     data = request.get_json()
     user = User.query.filter_by(username=data.get('username')).first()
     if user and user.check_password(data.get('password')):

@@ -1,78 +1,172 @@
--- Insert into department
-INSERT INTO department (dept_name, building, budget)
-VALUES
-    ('CompSci', 'CS_Building', 200000.00),
-    ('Math', 'Math_Building', 150000.00),
-    ('Physics', 'Phy_Building', 100000.00);
+-- Create Tables
 
--- Insert into classroom
-INSERT INTO classroom (building, room_no, capacity)
-VALUES
-    ('CS_Building', '101', 50),
-    ('CS_Building', '102', 40),
-    ('Math_Building', '201', 30);
+-- Users table for authentication and role management
+CREATE TABLE Users (
+    user_id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role VARCHAR(20) NOT NULL CHECK (role IN ('student', 'instructor', 'admin')),
+    email VARCHAR(100) UNIQUE NOT NULL
+);
 
--- Insert into time_slot
-INSERT INTO time_slot (day, start_time, end_time)
-VALUES
-    ('Mon', '09:00', '10:00'),
-    ('Mon', '10:00', '11:00'),
-    ('Wed', '14:00', '15:30');
+-- Departments table to categorize courses, students, and instructors
+CREATE TABLE Departments (
+    department_id SERIAL PRIMARY KEY,
+    name VARCHAR(100) UNIQUE NOT NULL
+);
 
--- Insert into course
-INSERT INTO course (course_id, title, dept_name, credits)
-VALUES
-    ('CS101', 'Intro to Programming', 'CompSci', 4),
-    ('CS201', 'Data Structures', 'CompSci', 4),
-    ('MATH101', 'Calculus I', 'Math', 4),
-    ('PHYS101', 'Mechanics', 'Physics', 3);
+-- Students table for student-specific information
+CREATE TABLE Students (
+    student_id SERIAL PRIMARY KEY,
+    user_id INT UNIQUE NOT NULL REFERENCES Users(user_id),
+    name VARCHAR(100) NOT NULL,
+    department_id INT NOT NULL REFERENCES Departments(department_id)
+);
 
--- Insert into student
-INSERT INTO student (ID, name, dept_name, tot_cred)
-VALUES
-    (1001, 'Alice', 'CompSci', 16),
-    (1002, 'Bob', 'Math', 12),
-    (1003, 'Charlie', NULL, 0);  -- no dept assigned yet
+-- Instructors table for instructor-specific details
+CREATE TABLE Instructors (
+    instructor_id SERIAL PRIMARY KEY,
+    user_id INT UNIQUE NOT NULL REFERENCES Users(user_id),
+    name VARCHAR(100) NOT NULL,
+    department_id INT NOT NULL REFERENCES Departments(department_id),
+    research_areas TEXT
+);
 
--- Insert into instructor
-INSERT INTO instructor (ID, name, dept_name, salary)
-VALUES
-    (9001, 'Dr. Smith', 'CompSci', 120000.00),
-    (9002, 'Dr. Johnson', 'Math', 100000.00),
-    (9003, 'Dr. Carter', 'Physics', 110000.00);
+-- Courses table for the course catalog
+CREATE TABLE Courses (
+    course_id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    credits INT NOT NULL CHECK (credits > 0),
+    department_id INT NOT NULL REFERENCES Departments(department_id)
+);
 
--- Insert into section
--- We'll assume 'CS101' has a section 1 in Fall 2025, meets in CS_Building, room 101, time_slot_id=1
-INSERT INTO section (course_id, sec_id, semester, year, building, room_no, time_slot_id)
-VALUES
-    ('CS101', 1, 'Fall', 2025, 'CS_Building', '101', 1),
-    ('CS201', 1, 'Fall', 2025, 'CS_Building', '102', 2),
-    ('MATH101', 1, 'Fall', 2025, 'Math_Building', '201', 2);
+-- Semesters table to track academic terms
+CREATE TABLE Semesters (
+    semester_id SERIAL PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    add_deadline DATE NOT NULL,
+    drop_deadline DATE NOT NULL,
+    CHECK (start_date < end_date),
+    CHECK (add_deadline <= drop_deadline)
+);
 
--- Insert into teaches
-INSERT INTO teaches (ID, course_id, sec_id, semester, year)
-VALUES
-    (9001, 'CS101', 1, 'Fall', 2025),
-    (9001, 'CS201', 1, 'Fall', 2025),
-    (9002, 'MATH101', 1, 'Fall', 2025);
+-- CourseOfferings table to link courses to semesters and instructors
+CREATE TABLE CourseOfferings (
+    offering_id SERIAL PRIMARY KEY,
+    course_id INT NOT NULL REFERENCES Courses(course_id),
+    semester_id INT NOT NULL REFERENCES Semesters(semester_id),
+    instructor_id INT NOT NULL REFERENCES Instructors(instructor_id),
+    max_seats INT NOT NULL CHECK (max_seats > 0),
+    current_seats INT NOT NULL DEFAULT 0 CHECK (current_seats <= max_seats),
+    UNIQUE (course_id, semester_id)
+);
 
--- Insert into takes
--- Let Alice take CS101, Bob take MATH101, etc.
-INSERT INTO takes (ID, course_id, sec_id, semester, year, grade)
-VALUES
-    (1001, 'CS101', 1, 'Fall', 2025, 'A'),
-    (1002, 'MATH101', 1, 'Fall', 2025, 'B'),
-    (1001, 'CS201', 1, 'Fall', 2025, NULL);  -- no grade yet
+-- Enrollments table to manage student registrations
+CREATE TABLE Enrollments (
+    enrollment_id SERIAL PRIMARY KEY,
+    student_id INT NOT NULL REFERENCES Students(student_id),
+    offering_id INT NOT NULL REFERENCES CourseOfferings(offering_id),
+    status VARCHAR(20) NOT NULL CHECK (status IN ('enrolled', 'dropped')),
+    enrollment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (student_id, offering_id)
+);
 
--- Insert into prereq
--- Suppose CS201 requires CS101
-INSERT INTO prereq (course_id, prereq_id)
-VALUES
-    ('CS201', 'CS101');
+-- Waitlists table to handle waitlisted students
+CREATE TABLE Waitlists (
+    waitlist_id SERIAL PRIMARY KEY,
+    student_id INT NOT NULL REFERENCES Students(student_id),
+    offering_id INT NOT NULL REFERENCES CourseOfferings(offering_id),
+    position INT NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (student_id, offering_id),
+    UNIQUE (offering_id, position)
+);
 
--- Insert into advisor
--- Let Dr. Smith advise Alice, Dr. Johnson advise Bob
-INSERT INTO advisor (s_id, i_id)
-VALUES
-    (1001, 9001),
-    (1002, 9002);
+-- Grades table to record student grades
+CREATE TABLE Grades (
+    grade_id SERIAL PRIMARY KEY,
+    enrollment_id INT UNIQUE NOT NULL REFERENCES Enrollments(enrollment_id),
+    grade VARCHAR(2) NOT NULL CHECK (grade IN ('A', 'B', 'C', 'D', 'F')),
+    submission_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Prerequisites table to define course prerequisites
+CREATE TABLE Prerequisites (
+    prerequisite_id SERIAL PRIMARY KEY,
+    course_id INT NOT NULL REFERENCES Courses(course_id),
+    prereq_course_id INT NOT NULL REFERENCES Courses(course_id),
+    UNIQUE (course_id, prereq_course_id),
+    CHECK (course_id != prereq_course_id)
+);
+
+-- CourseReviews table for student feedback on courses
+CREATE TABLE CourseReviews (
+    review_id SERIAL PRIMARY KEY,
+    student_id INT NOT NULL REFERENCES Students(student_id),
+    course_id INT NOT NULL REFERENCES Courses(course_id),
+    rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    comment TEXT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- InstructorReviews table for student feedback on instructors
+CREATE TABLE InstructorReviews (
+    review_id SERIAL PRIMARY KEY,
+    student_id INT NOT NULL REFERENCES Students(student_id),
+    instructor_id INT NOT NULL REFERENCES Instructors(instructor_id),
+    rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    comment TEXT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- AuditLogs table to track system activities
+CREATE TABLE AuditLogs (
+    log_id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES Users(user_id),
+    action VARCHAR(50) NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    details TEXT
+);
+
+-- Create Indexes for Performance Optimization
+
+CREATE INDEX idx_enrollments_student ON Enrollments(student_id);
+CREATE INDEX idx_enrollments_offering ON Enrollments(offering_id);
+CREATE INDEX idx_grades_enrollment ON Grades(enrollment_id);
+CREATE INDEX idx_courseofferings_course ON CourseOfferings(course_id);
+CREATE INDEX idx_courseofferings_semester ON CourseOfferings(semester_id);
+CREATE INDEX idx_waitlists_offering ON Waitlists(offering_id);
+CREATE INDEX idx_waitlists_position ON Waitlists(position);
+CREATE INDEX idx_prerequisites_course ON Prerequisites(course_id);
+CREATE INDEX idx_prerequisites_prereq ON Prerequisites(prereq_course_id);
+
+-- Create Views for Simplified Queries
+
+-- View for current course enrollments
+CREATE VIEW CurrentEnrollments AS
+SELECT 
+    s.name AS student_name, 
+    c.name AS course_name, 
+    i.name AS instructor_name, 
+    co.semester_id
+FROM Students s
+JOIN Enrollments e ON s.student_id = e.student_id
+JOIN CourseOfferings co ON e.offering_id = co.offering_id
+JOIN Courses c ON co.course_id = c.course_id
+JOIN Instructors i ON co.instructor_id = i.instructor_id
+WHERE e.status = 'enrolled';
+
+-- View for grade distributions
+CREATE VIEW GradeDistributions AS
+SELECT 
+    co.course_id, 
+    co.semester_id, 
+    g.grade, 
+    COUNT(*) AS count
+FROM Grades g
+JOIN Enrollments e ON g.enrollment_id = e.enrollment_id
+JOIN CourseOfferings co ON e.offering_id = co.offering_id
+GROUP BY co.course_id, co.semester_id, g.grade;

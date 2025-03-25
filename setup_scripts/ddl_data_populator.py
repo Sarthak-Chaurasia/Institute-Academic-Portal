@@ -18,17 +18,10 @@ def main():
     db_password = os.getenv("DB_PASSWORD")
 
     # Specify the file paths for your DDL and data scripts
-    ddl_file_path = "DDL.sql"
+
     data_file_path = "data.sql"
 
-    # Read the DDL script from file
-    try:
-        with open(ddl_file_path, "r") as ddl_file:
-            ddl_script = ddl_file.read()
-    except FileNotFoundError:
-        print(f"Error: Could not find DDL file '{ddl_file_path}'")
-        sys.exit(1)
-
+   
     # Read the data (DML) script from file
     try:
         with open(data_file_path, "r") as data_file:
@@ -49,11 +42,6 @@ def main():
         # Auto-commit so each command is executed immediately
         conn.autocommit = True
         cur = conn.cursor()
-
-        # Execute the DDL script
-        print("Executing DDL script...")
-        cur.execute(ddl_script)
-        print("DDL script executed successfully.")
 
         # Execute the data (DML) script
         print("Executing data script...")

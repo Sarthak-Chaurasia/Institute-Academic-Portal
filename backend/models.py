@@ -1,5 +1,6 @@
-from app import db
+# models.py
 from werkzeug.security import generate_password_hash, check_password_hash
+from app import db  # Import db from app
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
