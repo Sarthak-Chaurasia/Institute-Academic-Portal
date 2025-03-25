@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import jwt_decode from 'jwt-decode';
 import StudentDashboard from './StudentDashboard';
-import InstructorDashboard from './InstructorDashboard';
-import AdminDashboard from './AdminDashboard';
+// import InstructorDashboard from './InstructorDashboard';
+// import AdminDashboard from './AdminDashboard';
 
 function Dashboard() {
   const [role, setRole] = useState(null);
@@ -20,10 +20,10 @@ function Dashboard() {
   switch (role) {
     case 'student':
       return <StudentDashboard />;
-    case 'instructor':
-      return <InstructorDashboard />;
-    case 'admin':
-      return <AdminDashboard />;
+    // case 'instructor':
+    //   return <InstructorDashboard />;
+    // case 'admin':
+    //   return <AdminDashboard />;
     default:
       return <div>Unauthorized</div>;
   }
