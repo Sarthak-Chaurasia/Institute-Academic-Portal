@@ -1,12 +1,54 @@
 # routes/auth.py
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from app import db  # Import db from app.py
+from models import User
 
 auth_bp = Blueprint('auth', __name__)
 
+@auth_bp.route('/signup', methods=['POST'])
+def signup():
+    """Register a new user and return a JWT token."""
+    data = request.get_json()
+    print("Hi im here with data: ", data)
+    if not data or 'username' not in data or 'password' not in data or 'role' not in data:
+        print("Missing fields detected")
+        return jsonify({"msg": "Missing required fields: username, password, role"}), 400
+    
+    print("Checking if username exists...")
+    if User.query.filter_by(username=data['username']).first():
+        print(f"Username {data['username']} already taken")
+        return jsonify({"msg": "Username already taken"}), 409
+    
+    valid_roles = ['student', 'instructor', 'admin']
+    if data['role'] not in valid_roles:
+        print(f"Invalid role: {data['role']}")
+        return jsonify({"msg": f"Invalid role. Must be one of: {', '.join(valid_roles)}"}), 400
+    
+    try:
+        print("Creating new user...")
+        new_user = User(username=data['username'], role=data['role'])
+        print("Setting password...")
+        new_user.set_password(data['password'])
+        print("Adding to session...")
+        db.session.add(new_user)
+        print("Committing to database...")
+        db.session.commit()
+        print("Generating token...")
+        token = create_access_token(identity={'id': new_user.id, 'role': new_user.role})
+        print("User created successfully")
+        return jsonify({
+            "access_token": token,
+            "user": new_user.to_dict()
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error creating user: {str(e)}")
+        return jsonify({"msg": f"Error creating user: {str(e)}"}), 500
+
 @auth_bp.route('/login', methods=['POST'])
 def login():
-    from models import User  # Import here
+    """Authenticate a user and return a JWT token."""
     data = request.get_json()
     user = User.query.filter_by(username=data.get('username')).first()
     if user and user.check_password(data.get('password')):
@@ -14,7 +56,6 @@ def login():
         return jsonify(access_token=token), 200
     return jsonify({"msg": "Invalid credentials"}), 401
 
-# Role-based decorator
 def role_required(role):
     def decorator(fn):
         @jwt_required()
