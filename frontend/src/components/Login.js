@@ -10,7 +10,7 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.post('/login', { username, password });
+      const response = await api.post('/auth/login', { username, password });
       localStorage.setItem('token', response.data.access_token);
       history.push('/dashboard');
     } catch (error) {

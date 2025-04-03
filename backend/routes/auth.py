@@ -1,10 +1,9 @@
-# routes/auth.py
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-from app import db  # Import db from app.py
-from models import User
+from models import db, User  # Import from models
 
 auth_bp = Blueprint('auth', __name__)
+
 
 @auth_bp.route('/signup', methods=['POST'])
 def signup():
@@ -27,7 +26,19 @@ def signup():
     
     try:
         print("Creating new user...")
-        new_user = User(username=data['username'], role=data['role'])
+        email = data.get("email")
+        username = data['username']
+        role = data['role']
+        if not email:
+            print("No email provided, setting to None")
+            email = None
+        if not username:
+            print("No username provided, setting to None")
+            username = None
+        if not role:
+            print("No role provided, setting to None")
+            role = None
+        new_user = User(username=username, email=email, role=role)
         print("Setting password...")
         new_user.set_password(data['password'])
         print("Adding to session...")
@@ -35,7 +46,7 @@ def signup():
         print("Committing to database...")
         db.session.commit()
         print("Generating token...")
-        token = create_access_token(identity={'id': new_user.id, 'role': new_user.role})
+        token = create_access_token(identity={'id': new_user.username, 'role': new_user.role})
         print("User created successfully")
         return jsonify({
             "access_token": token,
@@ -49,10 +60,11 @@ def signup():
 @auth_bp.route('/login', methods=['POST'])
 def login():
     """Authenticate a user and return a JWT token."""
+    print("Login endpoint hit")
     data = request.get_json()
     user = User.query.filter_by(username=data.get('username')).first()
     if user and user.check_password(data.get('password')):
-        token = create_access_token(identity={'id': user.id, 'role': user.role})
+        token = create_access_token(identity={'id': user.username, 'role': user.role})
         return jsonify(access_token=token), 200
     return jsonify({"msg": "Invalid credentials"}), 401
 

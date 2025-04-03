@@ -5,8 +5,10 @@ const Signup = () => {
   const [formData, setFormData] = useState({
     username: '',
     password: '',
+    email: '', // Add email field
     role: 'student',
   });
+  
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -22,7 +24,7 @@ const Signup = () => {
     setError('');
 
     try {
-      const response = await axios.post('/auth/signup', formData); // Using proxy
+      const response = await axios.post('/api/auth/signup', formData); // Using proxy
       const { access_token, user } = response.data;
       console.log('Response received:', response.data);
       localStorage.setItem('token', access_token);
@@ -48,6 +50,18 @@ const Signup = () => {
             required
           />
         </div>
+        <div className="form-group">
+          <label htmlFor="email">Email:</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
         <div className="form-group">
           <label htmlFor="password">Password:</label>
           <input
