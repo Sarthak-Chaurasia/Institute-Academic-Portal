@@ -47,6 +47,7 @@ def signup():
         db.session.commit()
         print("Generating token...")
         token = create_access_token(identity={'id': new_user.username, 'role': new_user.role})
+        print("token: ", token, "user: ", new_user.username," role: ", new_user.role)
         print("User created successfully")
         return jsonify({
             "access_token": token,
@@ -65,6 +66,7 @@ def login():
     user = User.query.filter_by(username=data.get('username')).first()
     if user and user.check_password(data.get('password')):
         token = create_access_token(identity={'id': user.username, 'role': user.role})
+        print("token: ", token, "user: ", user.username," role: ", user.role)
         return jsonify(access_token=token), 200
     return jsonify({"msg": "Invalid credentials"}), 401
 

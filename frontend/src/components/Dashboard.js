@@ -11,11 +11,22 @@ function Dashboard() {
     const token = localStorage.getItem('token');
     if (token) {
       const decoded = jwt_decode(token);
-      setRole(decoded.identity.role);
+      const userRole = decoded?.role || decoded?.identity?.role;
+      setRole(userRole);
+      // setRole(decoded.identity.role);
     }
   }, []);
 
-  if (!role) return <div>Loading...</div>;
+  if (!role) {
+    // return <div>Loading...</div>;
+    return (
+      <div>
+        <h1>Loading...</h1>
+        <p>Role unidentified please login again.</p>
+        <p>Click <a href="/login">here</a> to login.</p>
+      </div>
+    );
+  }
 
   switch (role) {
     case 'student':
@@ -25,7 +36,13 @@ function Dashboard() {
     // case 'admin':
     //   return <AdminDashboard />;
     default:
-      return <div>Unauthorized</div>;
+      // return <div>Unauthorized</div>;
+      return (
+        <div>
+          <h1>Unauthorized</h1>
+          <p>You do not have permission to access this page.</p>
+        </div>
+      );
   }
 }
 

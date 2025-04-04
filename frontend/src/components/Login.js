@@ -17,7 +17,15 @@ function Login() {
       const response = await api.post('/auth/login', { username, password });
       //print response data to console
       console.log('Login response:', response.data);
-      localStorage.setItem('token', response.data.access_token);
+      if(response.data.access_token){
+        localStorage.setItem('token', response.data.access_token);
+        console.log('Token stored in localStorage:', response.data.access_token);
+      }
+      else{
+        setError('Access token not found in response');
+        console.error('Access token not found in response');
+        return;
+      }
       history.push('/dashboard');
     } catch (error) {
       console.error('Login failed', error);
