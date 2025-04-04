@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom';
+
+
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -11,6 +15,7 @@ const Signup = () => {
   
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  // const navigate = useNavigate(); // Use useNavigate hook for navigation
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -29,6 +34,9 @@ const Signup = () => {
       console.log('Response received:', response.data);
       localStorage.setItem('token', access_token);
       setMessage(`Signup successful! Welcome, ${user.username} (Role: ${user.role})`);
+      // setTimeout(() => {
+      //   navigate('/login'); // Redirect to login page after successful signup
+      // }, 500); // Redirect after 0.5 seconds
     } catch (err) {
       console.error('Signup error:', err.response ? err.response.data : err.message);
       setError(err.response?.data?.msg || 'An error occurred during signup');
@@ -91,6 +99,9 @@ const Signup = () => {
       </form>
       {message && <p className="success-message">{message}</p>}
       {error && <p className="error-message">{error}</p>}
+      <p>
+        Already have an account? <Link to="/login">Log in here</Link>
+      </p>
     </div>
   );
 };
