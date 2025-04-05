@@ -2,6 +2,7 @@ import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
+from flask_cors import CORS
 from dotenv import load_dotenv
 from models import db, User, Course, Enrollment, Grade  # Import models
 
@@ -11,6 +12,13 @@ load_dotenv(dotenv_path=env_path)
 
 def create_app():
     app = Flask(__name__)
+    # CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
+    CORS(app, resources={r"/api/*": {
+    "origins": "http://localhost:3000",
+    "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    "allow_headers": ["Content-Type", "Authorization"],}})
+
+
 
     # Environment variables
     DB_USER = os.getenv('DB_USER')
@@ -31,8 +39,10 @@ def create_app():
     # Register blueprints
     from routes.auth import auth_bp
     from routes.courses import courses_bp
+    from routes.register import register_bp
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(courses_bp, url_prefix='/api/courses')
+    app.register_blueprint(register_bp, url_prefix='/api/register')
 
     # Create tables
     with app.app_context():

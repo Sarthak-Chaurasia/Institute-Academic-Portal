@@ -1,22 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import api from '../api';
+import React from 'react';
+import { Link } from 'react-router-dom';
 
 function StudentDashboard() {
-  const [courses, setCourses] = useState([]);
-
-  useEffect(() => {
-    api.get('/my_courses')
-      .then((response) => setCourses(response.data))
-      .catch((error) => console.error('Error fetching courses', error));
-  }, []);
-
   return (
-    <div>
-      <h1>My Courses</h1>
+    <div style={{ padding: '20px' }}>
+      <h1 style={{ textAlign: 'center' }}>Student Dashboard</h1>
       <ul>
-        {courses.map((course) => (
-          <li key={course.id}>{course.name}</li>
-        ))}
+        <li><Link to="/registration">Registration</Link></li>
+        <li><Link to="/courses">All Courses</Link></li>
+        {/* Add more links as needed */}
       </ul>
     </div>
   );

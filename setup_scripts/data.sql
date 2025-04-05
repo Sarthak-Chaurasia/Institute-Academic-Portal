@@ -1,172 +1,63 @@
--- Create Tables
+INSERT INTO departments(department_id, name) VALUES
+(1, 'Computer Science and Engineering'),
+(2, 'Electrical Engineering'),
+(3, 'Mechanical Engineering'),
+(4, 'Civil Engineering'),
+(5, 'Chemical Engineering'),
+(6, 'Biotechnology'),
+(7, 'Mathematics'),
+(8, 'Physics'),
+(9, 'Chemistry'),
+(10, 'Humanities and Social Sciences');
 
--- Users table for authentication and role management
-CREATE TABLE Users (
-    user_id SERIAL PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    role VARCHAR(20) NOT NULL CHECK (role IN ('student', 'instructor', 'admin')),
-    email VARCHAR(100) UNIQUE NOT NULL
-);
+INSERT INTO courses (course_id, name, description, credits, department_id) VALUES
+('CS101', 'Computer Programming and Utilization', 'Interdisciplinary STEM Course.', 6, 1),
+('CS104', 'Software Systems Lab', 'Advanced Course.', 5, 1),
+('CS108', 'Software Systems Lab', 'Advanced Course.', 1, 1),
+('CS207', 'Discrete Structures', 'Advanced Course.', 5, 1),
+('CS213', 'Data Structures and Algorithms', 'Advanced Course.', 5, 1),
+('CS217', 'Artificial Intelligence and Machine Learning', 'Advanced Course.', 1, 1),
+('CS218', 'Design and Analysis of Algorithms', 'Advanced Course.', 2, 1),
+('CS219', 'Operating Systems', 'Advanced Course.', 3, 1),
+('CS224', 'Computer Networks', 'Advanced Course.', 5, 1),
+('CS228', 'Logic for Computer Science', 'Advanced Course.', 5, 1),
+('CS236', 'Operating Systems Lab', 'Advanced Course.', 1, 1),
+('CS240', 'Artificial Intelligence and Machine Learning (Lab)', 'Advanced Course.', 1, 1),
+('CS302', 'Implementation of Programming Languages', 'Advanced Course.', 4, 1),
+('CS306', 'Implementation of Programming Languages Laboratory', 'Advanced Course.', 1, 1),
+('CS310', 'Automata Theory', 'Advanced Course.', 5, 1),
+('CS316', 'Implementation of Programming Languages Lab', 'Advanced Course.', 1, 1),
+('CS317', 'Database and Information Systems', 'Advanced Course.', 2, 1),
+('CS320', 'Implementation of Programming Languages', 'Advanced Course.', 4, 1),
+('CS349', 'Database and Information Systems Lab', 'Advanced Course.', 1, 1),
+('CS387', 'Database and Information Systems Lab', 'Advanced Course.', 1, 1),
+('CS396', 'Seminar', 'Interdisciplinary STEM Course.', 1, 1),
+('CS433', 'Automated Reasoning', 'Interdisciplinary STEM Course.', 15, 1),
+('CS485', 'R & D Project II', 'Interdisciplinary STEM Course.', 1, 1),
+('CS490', 'R & D Project', 'Interdisciplinary STEM Course.', 1, 1),
+('CS492', 'BTP I', 'Interdisciplinary STEM Course.', 1, 1),
+('CS496', 'BTP II', 'Interdisciplinary STEM Course.', 1, 1),
+('CS6002', 'Selected Areas of Mechanism Design', 'Interdisciplinary STEM Course.', 5, 1),
+('CS603', 'Geometric Algorithms', 'Interdisciplinary STEM Course.', 11, 1),
+('CS6102', 'Implementation Security in Cryptography', 'Interdisciplinary STEM Course.', 6, 1);
 
--- Departments table to categorize courses, students, and instructors
-CREATE TABLE Departments (
-    department_id SERIAL PRIMARY KEY,
-    name VARCHAR(100) UNIQUE NOT NULL
-);
-
--- Students table for student-specific information
-CREATE TABLE Students (
-    student_id SERIAL PRIMARY KEY,
-    user_id INT UNIQUE NOT NULL REFERENCES Users(user_id),
-    name VARCHAR(100) NOT NULL,
-    department_id INT NOT NULL REFERENCES Departments(department_id)
-);
-
--- Instructors table for instructor-specific details
-CREATE TABLE Instructors (
-    instructor_id SERIAL PRIMARY KEY,
-    user_id INT UNIQUE NOT NULL REFERENCES Users(user_id),
-    name VARCHAR(100) NOT NULL,
-    department_id INT NOT NULL REFERENCES Departments(department_id),
-    research_areas TEXT
-);
-
--- Courses table for the course catalog
-CREATE TABLE Courses (
-    course_id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    description TEXT,
-    credits INT NOT NULL CHECK (credits > 0),
-    department_id INT NOT NULL REFERENCES Departments(department_id)
-);
-
--- Semesters table to track academic terms
-CREATE TABLE Semesters (
-    semester_id SERIAL PRIMARY KEY,
-    name VARCHAR(50) UNIQUE NOT NULL,
-    start_date DATE NOT NULL,
-    end_date DATE NOT NULL,
-    add_deadline DATE NOT NULL,
-    drop_deadline DATE NOT NULL,
-    CHECK (start_date < end_date),
-    CHECK (add_deadline <= drop_deadline)
-);
-
--- CourseOfferings table to link courses to semesters and instructors
-CREATE TABLE CourseOfferings (
-    offering_id SERIAL PRIMARY KEY,
-    course_id INT NOT NULL REFERENCES Courses(course_id),
-    semester_id INT NOT NULL REFERENCES Semesters(semester_id),
-    instructor_id INT NOT NULL REFERENCES Instructors(instructor_id),
-    max_seats INT NOT NULL CHECK (max_seats > 0),
-    current_seats INT NOT NULL DEFAULT 0 CHECK (current_seats <= max_seats),
-    UNIQUE (course_id, semester_id)
-);
-
--- Enrollments table to manage student registrations
-CREATE TABLE Enrollments (
-    enrollment_id SERIAL PRIMARY KEY,
-    student_id INT NOT NULL REFERENCES Students(student_id),
-    offering_id INT NOT NULL REFERENCES CourseOfferings(offering_id),
-    status VARCHAR(20) NOT NULL CHECK (status IN ('enrolled', 'dropped')),
-    enrollment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (student_id, offering_id)
-);
-
--- Waitlists table to handle waitlisted students
-CREATE TABLE Waitlists (
-    waitlist_id SERIAL PRIMARY KEY,
-    student_id INT NOT NULL REFERENCES Students(student_id),
-    offering_id INT NOT NULL REFERENCES CourseOfferings(offering_id),
-    position INT NOT NULL,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (student_id, offering_id),
-    UNIQUE (offering_id, position)
-);
-
--- Grades table to record student grades
-CREATE TABLE Grades (
-    grade_id SERIAL PRIMARY KEY,
-    enrollment_id INT UNIQUE NOT NULL REFERENCES Enrollments(enrollment_id),
-    grade VARCHAR(2) NOT NULL CHECK (grade IN ('A', 'B', 'C', 'D', 'F')),
-    submission_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Prerequisites table to define course prerequisites
-CREATE TABLE Prerequisites (
-    prerequisite_id SERIAL PRIMARY KEY,
-    course_id INT NOT NULL REFERENCES Courses(course_id),
-    prereq_course_id INT NOT NULL REFERENCES Courses(course_id),
-    UNIQUE (course_id, prereq_course_id),
-    CHECK (course_id != prereq_course_id)
-);
-
--- CourseReviews table for student feedback on courses
-CREATE TABLE CourseReviews (
-    review_id SERIAL PRIMARY KEY,
-    student_id INT NOT NULL REFERENCES Students(student_id),
-    course_id INT NOT NULL REFERENCES Courses(course_id),
-    rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
-    comment TEXT,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- InstructorReviews table for student feedback on instructors
-CREATE TABLE InstructorReviews (
-    review_id SERIAL PRIMARY KEY,
-    student_id INT NOT NULL REFERENCES Students(student_id),
-    instructor_id INT NOT NULL REFERENCES Instructors(instructor_id),
-    rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
-    comment TEXT,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- AuditLogs table to track system activities
-CREATE TABLE AuditLogs (
-    log_id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL REFERENCES Users(user_id),
-    action VARCHAR(50) NOT NULL,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    details TEXT
-);
-
--- Create Indexes for Performance Optimization
-
-CREATE INDEX idx_enrollments_student ON Enrollments(student_id);
-CREATE INDEX idx_enrollments_offering ON Enrollments(offering_id);
-CREATE INDEX idx_grades_enrollment ON Grades(enrollment_id);
-CREATE INDEX idx_courseofferings_course ON CourseOfferings(course_id);
-CREATE INDEX idx_courseofferings_semester ON CourseOfferings(semester_id);
-CREATE INDEX idx_waitlists_offering ON Waitlists(offering_id);
-CREATE INDEX idx_waitlists_position ON Waitlists(position);
-CREATE INDEX idx_prerequisites_course ON Prerequisites(course_id);
-CREATE INDEX idx_prerequisites_prereq ON Prerequisites(prereq_course_id);
-
--- Create Views for Simplified Queries
-
--- View for current course enrollments
-CREATE VIEW CurrentEnrollments AS
-SELECT 
-    s.name AS student_name, 
-    c.name AS course_name, 
-    i.name AS instructor_name, 
-    co.semester_id
-FROM Students s
-JOIN Enrollments e ON s.student_id = e.student_id
-JOIN CourseOfferings co ON e.offering_id = co.offering_id
-JOIN Courses c ON co.course_id = c.course_id
-JOIN Instructors i ON co.instructor_id = i.instructor_id
-WHERE e.status = 'enrolled';
-
--- View for grade distributions
-CREATE VIEW GradeDistributions AS
-SELECT 
-    co.course_id, 
-    co.semester_id, 
-    g.grade, 
-    COUNT(*) AS count
-FROM Grades g
-JOIN Enrollments e ON g.enrollment_id = e.enrollment_id
-JOIN CourseOfferings co ON e.offering_id = co.offering_id
-GROUP BY co.course_id, co.semester_id, g.grade;
+INSERT INTO courses (course_id, name, description, credits, department_id) VALUES
+('EE114', 'Power Engineering - I', 'Fundamentals of power systems, machines, and transmission.', 6, 2),
+('EE204', 'Analog Circuits', 'Theory and application of analog electronic circuits.', 6, 2),
+('EE207', 'Electronic Devices & Circuits', 'Introduction to electronic components and their circuit applications.', 6, 2),
+('EE209', 'Electrical/Electronics Lab.', 'Lab experiments on electrical and electronic circuits.', 4, 2),
+('EE225', 'Network Theory', 'Analysis and synthesis of electrical networks.', 6, 2),
+('EE229', 'Signal Processing – I', 'Intro to digital signal processing: sampling, filtering, transforms.', 6, 2),
+('EE230', 'Analog Lab', 'Hands-on lab on analog circuits and devices.', 4, 2),
+('EE238', 'Power Engineering - II', 'Advanced topics in power systems, transmission, and protection.', 6, 2),
+('EE302', 'Control Systems', 'Feedback control systems, stability, and response analysis.', 6, 2),
+('EE309', 'Microprocessors', 'Architecture and programming of microprocessors.', 6, 2),
+('EE325', 'Probability and Random Processes', 'Probability models and stochastic processes in engineering.', 6, 2),
+('EE337', 'Microprocessors Laboratory', 'Lab work with microprocessor-based systems and interfaces.', 4, 2),
+('EE338', 'Digital Signal Processing', 'Advanced DSP concepts and real-world applications.', 6, 2),
+('EE344', 'Electronic Design Lab', 'Design and testing of electronic systems in lab.', 4, 2),
+('EE350', 'Technical Communication', 'Developing technical writing and presentation skills.', 3, 2),
+('EE451', 'Supervised Research Exposition', 'Guided research with report and presentation.', 6, 2),
+('EE462', 'DSP Software and Hardware Lab', 'DSP implementation in software and hardware environments.', 4, 2),
+('EE491', 'BTP I', 'First phase of B.Tech project with research focus.', 6, 2),
+('EE492', 'BTP II', 'Final phase of B.Tech project with implementation.', 6, 2);

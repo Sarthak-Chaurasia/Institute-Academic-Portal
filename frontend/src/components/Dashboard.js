@@ -11,7 +11,9 @@ function Dashboard() {
     const token = localStorage.getItem('token');
     if (token) {
       const decoded = jwt_decode(token);
-      const userRole = decoded?.role || decoded?.identity?.role;
+      console.log('Decoded JWT:', decoded);
+      const user_id = parseInt(decoded?.sub);
+      const userRole = decoded?.role;
       setRole(userRole);
       // setRole(decoded.identity.role);
     }
@@ -22,7 +24,7 @@ function Dashboard() {
     return (
       <div>
         <h1>Loading...</h1>
-        <p>Role unidentified please login again.</p>
+        <p>Role unidentified please login again. Role: {role}</p>
         <p>Click <a href="/login">here</a> to login.</p>
       </div>
     );

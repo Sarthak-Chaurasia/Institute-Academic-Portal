@@ -46,7 +46,7 @@ def signup():
         print("Committing to database...")
         db.session.commit()
         print("Generating token...")
-        token = create_access_token(identity={'id': new_user.username, 'role': new_user.role})
+        token = create_access_token(identity=str(new_user.user_id), additional_claims={"role": new_user.role}) 
         print("token: ", token, "user: ", new_user.username," role: ", new_user.role)
         print("User created successfully")
         return jsonify({
@@ -65,12 +65,13 @@ def login():
     data = request.get_json()
     user = User.query.filter_by(username=data.get('username')).first()
     if user and user.check_password(data.get('password')):
-        token = create_access_token(identity={'id': user.username, 'role': user.role})
+        token = create_access_token(identity=str(user.user_id), additional_claims={"role": user.role})
         print("token: ", token, "user: ", user.username," role: ", user.role)
         return jsonify(access_token=token), 200
     return jsonify({"msg": "Invalid credentials"}), 401
 
 def role_required(role):
+    #this jwt_required might cause error as it is related to cookies which we are not doing
     def decorator(fn):
         @jwt_required()
         def wrapper(*args, **kwargs):

@@ -5,12 +5,17 @@ from routes.auth import role_required
 
 courses_bp = Blueprint('courses', __name__)
 
-@courses_bp.route('/courses', methods=['GET'])
+@courses_bp.route('/', methods=['GET'])
 def get_courses():
+    print("Hitting /courses")
     courses = Course.query.all()
+    if not courses:
+        return jsonify({"msg": "No courses found"}), 404
+    else :
+        print(f"Found {len(courses)} courses")
     return jsonify([course.to_dict() for course in courses]), 200
 
-@courses_bp.route('/courses', methods=['POST'])
+@courses_bp.route('/', methods=['POST'])
 @jwt_required()
 @role_required('admin')
 def add_course():

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import api from '../api';
+import { useHistory } from 'react-router-dom/cjs/react-router-dom.min';
 // import { useNavigate } from 'react-router-dom';
 
 
@@ -29,14 +31,17 @@ const Signup = () => {
     setError('');
 
     try {
-      const response = await axios.post('/api/auth/signup', formData); // Using proxy
+      // const response = await axios.post('/api/auth/signup', formData); // Using proxy
+      const response = await api.post('/auth/signup', formData); // Using axios instance with base URL
       const { access_token, user } = response.data;
       console.log('Response received:', response.data);
+      if (!access_token) {
+        setError('Access token not found in response');
+        console.error('Access token not found in response');
+        return;
+      }
       localStorage.setItem('token', access_token);
-      setMessage(`Signup successful! Welcome, ${user.username} (Role: ${user.role})`);
-      // setTimeout(() => {
-      //   navigate('/login'); // Redirect to login page after successful signup
-      // }, 500); // Redirect after 0.5 seconds
+      history.push('/dashboard');
     } catch (err) {
       console.error('Signup error:', err.response ? err.response.data : err.message);
       setError(err.response?.data?.msg || 'An error occurred during signup');
