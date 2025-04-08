@@ -26,6 +26,7 @@ function Login() {
         console.error('Access token not found in response');
         return;
       }
+      localStorage.setItem('registered', true);
       history.push('/dashboard');
     } catch (error) {
       console.error('Login failed', error);
@@ -34,6 +35,8 @@ function Login() {
   };
 
   return (
+    <div className="container">
+      <div className="card">
     <form onSubmit={handleSubmit}>
       <input
         type="text"
@@ -51,6 +54,8 @@ function Login() {
       {error && <p className="error-message" style={{ color: 'red' }}>{error}</p>}
       <p>Don't have an account? <Link to="/signup">Sign up</Link></p>
     </form>
+    </div>
+    </div>
   );
 }
 

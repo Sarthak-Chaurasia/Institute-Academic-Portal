@@ -22,7 +22,8 @@ const PersonalDetails = () => {
       }, []);
 
   return (
-    <div>
+    <div className="container">
+      <div className="card">
       <h2>Personal Details</h2>
       <p><strong>Name:</strong> {details.Name}</p>
       <p><strong>Identity:</strong> {details.Identity}</p>
@@ -48,6 +49,7 @@ const PersonalDetails = () => {
         </>
       )}
       <p><Link to="/dashboard">Back to Dashboard</Link></p>
+    </div>
     </div>
     
   );

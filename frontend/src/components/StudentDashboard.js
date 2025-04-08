@@ -5,13 +5,15 @@ import api from '../api'; // Import the API instance
 import { useHistory } from 'react-router-dom';
 
 function handleLogout() {
-  localStorage.removeItem('token'); // Remove the token from local storage
+  localStorage.removeItem('token');
+  localStorage.removeItem('registered');
   window.location.href = '/login'; // Redirect to the login page
 }
 
 function StudentDashboard() {
   return (
-    <div style={{ padding: '20px' }}>
+    <div className="container">
+      <div className="card">
       <h1 style={{ textAlign: 'center' }}>Student Dashboard</h1>
       <ul>
         <li><Link to="/courses">All Courses</Link></li>
@@ -19,6 +21,7 @@ function StudentDashboard() {
         <button onClick={handleLogout}>Logout</button>
         {/* Add more links as needed */}
       </ul>
+    </div>
     </div>
   );
 }

@@ -22,10 +22,12 @@ function Dashboard() {
   if (!role) {
     // return <div>Loading...</div>;
     return (
-      <div>
+      <div className="container">
+      <div className="card">
         <h1>Loading...</h1>
         <p>Role unidentified please login again. Role: {role}</p>
         <p>Click <a href="/login">here</a> to login.</p>
+        </div>
       </div>
     );
   }
@@ -40,9 +42,11 @@ function Dashboard() {
     default:
       // return <div>Unauthorized</div>;
       return (
-        <div>
+        <div className="container">
+      <div className="card">
           <h1>Unauthorized</h1>
           <p>You do not have permission to access this page.</p>
+          </div>
         </div>
       );
   }

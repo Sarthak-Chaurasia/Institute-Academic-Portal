@@ -15,7 +15,8 @@ function Courses() {
   }, []);
 
   return (
-    <div style={{ padding: '20px' }}>
+    <div className="container">
+      <div className="card">
       <h1 style={{ textAlign: 'center' }}>All Courses</h1>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead style={{ backgroundColor: '#f9f9f9' }}>
@@ -40,6 +41,7 @@ function Courses() {
         </tbody>
       </table>
       <p><Link to="/dashboard">Back to Dashboard</Link></p>
+      </div>
     </div>
   );
 }
