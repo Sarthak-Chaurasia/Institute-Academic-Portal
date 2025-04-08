@@ -1,0 +1,49 @@
+course_id,name,description,credits,department_id
+CS101,Computer Programming and Utilization,Interdisciplinary STEM Course.,6,1
+CS104,Software Systems Lab,Advanced Course.,5,1
+CS108,Software Systems Lab,Advanced Course.,1,1
+CS207,Discrete Structures,Advanced Course.,5,1
+CS213,Data Structures and Algorithms,Advanced Course.,5,1
+CS217,Artificial Intelligence and Machine Learning,Advanced Course.,1,1
+CS218,Design and Analysis of Algorithms,Advanced Course.,2,1
+CS219,Operating Systems,Advanced Course.,3,1
+CS224,Computer Networks,Advanced Course.,5,1
+CS228,Logic for Computer Science,Advanced Course.,5,1
+CS236,Operating Systems Lab,Advanced Course.,1,1
+CS240,Artificial Intelligence and Machine Learning (Lab),Advanced Course.,1,1
+CS302,Implementation of Programming Languages,Advanced Course.,4,1
+CS306,Implementation of Programming Languages Laboratory,Advanced Course.,1,1
+CS310,Automata Theory,Advanced Course.,5,1
+CS316,Implementation of Programming Languages Lab,Advanced Course.,1,1
+CS317,Database and Information Systems,Advanced Course.,2,1
+CS320,Implementation of Programming Languages,Advanced Course.,4,1
+CS349,Database and Information Systems Lab,Advanced Course.,1,1
+CS387,Database and Information Systems Lab,Advanced Course.,1,1
+CS396,Seminar,Interdisciplinary STEM Course.,1,1
+CS433,Automated Reasoning,Interdisciplinary STEM Course.,15,1
+CS485,R & D Project II,Interdisciplinary STEM Course.,1,1
+CS490,R & D Project,Interdisciplinary STEM Course.,1,1
+CS492,BTP I,Interdisciplinary STEM Course.,1,1
+CS496,BTP II,Interdisciplinary STEM Course.,1,1
+CS6002,Selected Areas of Mechanism Design,Interdisciplinary STEM Course.,5,1
+CS603,Geometric Algorithms,Interdisciplinary STEM Course.,11,1
+CS6102,Implementation Security in Cryptography,Interdisciplinary STEM Course.,6,1
+EE114,Power Engineering - I,"Fundamentals of power systems, machines, and transmission.",6,2
+EE204,Analog Circuits,Theory and application of analog electronic circuits.,6,2
+EE207,Electronic Devices & Circuits,Introduction to electronic components and their circuit applications.,6,2
+EE209,Electrical/Electronics Lab.,Lab experiments on electrical and electronic circuits.,4,2
+EE225,Network Theory,Analysis and synthesis of electrical networks.,6,2
+EE229,Signal Processing â€“ I,"Intro to digital signal processing: sampling, filtering, transforms.",6,2
+EE230,Analog Lab,Hands-on lab on analog circuits and devices.,4,2
+EE238,Power Engineering - II,"Advanced topics in power systems, transmission, and protection.",6,2
+EE302,Control Systems,"Feedback control systems, stability, and response analysis.",6,2
+EE309,Microprocessors,Architecture and programming of microprocessors.,6,2
+EE325,Probability and Random Processes,Probability models and stochastic processes in engineering.,6,2
+EE337,Microprocessors Laboratory,Lab work with microprocessor-based systems and interfaces.,4,2
+EE338,Digital Signal Processing,Advanced DSP concepts and real-world applications.,6,2
+EE344,Electronic Design Lab,Design and testing of electronic systems in lab.,4,2
+EE350,Technical Communication,Developing technical writing and presentation skills.,3,2
+EE451,Supervised Research Exposition,Guided research with report and presentation.,6,2
+EE462,DSP Software and Hardware Lab,DSP implementation in software and hardware environments.,4,2
+EE491,BTP I,First phase of B.Tech project with research focus.,6,2
+EE492,BTP II,Final phase of B.Tech project with implementation.,6,2

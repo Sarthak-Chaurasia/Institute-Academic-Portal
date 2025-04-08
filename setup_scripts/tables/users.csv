@@ -1,0 +1,2 @@
+user_id,username,password,role,email
+1,sarthak,scrypt:32768:8:1$szXBkqWk1SFZL4zt$4be979369ebca60688d79f1180101588ff05fc5c5ca573a5bcd320190baf2549ce570e506454b5499c2eff48e80b5ece426bffbde66a9f89bf626ec54b054745,student,22b1014@gmail.com

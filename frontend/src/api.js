@@ -24,7 +24,6 @@ api.interceptors.request.use(
   }
 );
 
-// if token is expired or invalid, redirect to login page
 // api.interceptors.response.use(
 //   (response) => response,
 //   (error) => {

@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-from models import db, User  # Import from models
+from models import db, User, Student, Instructor  # Import from models
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -9,15 +9,15 @@ auth_bp = Blueprint('auth', __name__)
 def signup():
     """Register a new user and return a JWT token."""
     data = request.get_json()
-    print("Hi im here with data: ", data)
+    # print("Hi im here with data: ", data)
     if not data or 'username' not in data or 'password' not in data or 'role' not in data:
         print("Missing fields detected")
         return jsonify({"msg": "Missing required fields: username, password, role"}), 400
     
-    print("Checking if username exists...")
-    if User.query.filter_by(username=data['username']).first():
-        print(f"Username {data['username']} already taken")
-        return jsonify({"msg": "Username already taken"}), 409
+    # print("Checking if username exists...")
+    # if User.query.filter_by(username=data['username']).first():
+    #     print(f"Username {data['username']} already taken")
+    #     return jsonify({"msg": "Username already taken"}), 409
     
     valid_roles = ['student', 'instructor', 'admin']
     if data['role'] not in valid_roles:
@@ -26,26 +26,22 @@ def signup():
     
     try:
         print("Creating new user...")
-        email = data.get("email")
+        # email = data.get("email")
         username = data['username']
         role = data['role']
-        if not email:
-            print("No email provided, setting to None")
-            email = None
-        if not username:
-            print("No username provided, setting to None")
-            username = None
-        if not role:
-            print("No role provided, setting to None")
-            role = None
-        new_user = User(username=username, email=email, role=role)
-        print("Setting password...")
+        # if not email:
+        #     print("No email provided, setting to None")
+        #     email = None
+        # if not username:
+        #     print("No username provided, setting to None")
+        #     username = None
+        # if not role:
+        #     print("No role provided, setting to None")
+        #     role = None
+        new_user = User(username=username, role=role)
         new_user.set_password(data['password'])
-        print("Adding to session...")
         db.session.add(new_user)
-        print("Committing to database...")
         db.session.commit()
-        print("Generating token...")
         token = create_access_token(identity=str(new_user.user_id), additional_claims={"role": new_user.role}) 
         print("token: ", token, "user: ", new_user.username," role: ", new_user.role)
         print("User created successfully")
@@ -63,7 +59,18 @@ def login():
     """Authenticate a user and return a JWT token."""
     print("Login endpoint hit")
     data = request.get_json()
-    user = User.query.filter_by(username=data.get('username')).first()
+    # user = User.query.filter_by(username=data.get('username')).first()
+    student = Student.query.filter_by(student_id=data.get('Id')).first() or None
+    instructor = Instructor.query.filter_by(instructor_id=data.get('Id')).first() or None
+    print("Student: ", student, "Instructor: ", instructor)
+    if not student and not instructor:
+        print("User not found")
+        return jsonify({"msg": "User not found"}), 404
+    if student:
+        user = student.user
+    elif instructor:
+        user = instructor.user
+    print("User found: ", user.username, "Role: ", user.role)
     if user and user.check_password(data.get('password')):
         token = create_access_token(identity=str(user.user_id), additional_claims={"role": user.role})
         print("token: ", token, "user: ", user.username," role: ", user.role)

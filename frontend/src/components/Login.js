@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 
 
 function Login() {
-  const [username, setUsername] = useState('');
+  const [Id, setId] = useState('');
   const [password, setPassword] = useState('');
   const history = useHistory();
   const [error, setError] = useState('');
@@ -14,7 +14,7 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.post('/auth/login', { username, password });
+      const response = await api.post('/auth/login', { Id, password });
       //print response data to console
       console.log('Login response:', response.data);
       if(response.data.access_token){
@@ -37,9 +37,9 @@ function Login() {
     <form onSubmit={handleSubmit}>
       <input
         type="text"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        placeholder="Username"
+        value={Id}
+        onChange={(e) => setId(e.target.value)}
+        placeholder="ID"
       />
       <input
         type="password"

@@ -11,12 +11,12 @@ const Signup = () => {
   const [formData, setFormData] = useState({
     username: '',
     password: '',
-    email: '', // Add email field
     role: 'student',
   });
   
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const history = useHistory(); // Use useHistory hook for navigation
   // const navigate = useNavigate(); // Use useNavigate hook for navigation
 
   const handleChange = (e) => {
@@ -41,7 +41,7 @@ const Signup = () => {
         return;
       }
       localStorage.setItem('token', access_token);
-      history.push('/dashboard');
+      history.push('/registration'); // Redirect to registration page after successful signup
     } catch (err) {
       console.error('Signup error:', err.response ? err.response.data : err.message);
       setError(err.response?.data?.msg || 'An error occurred during signup');
@@ -63,18 +63,6 @@ const Signup = () => {
             required
           />
         </div>
-        <div className="form-group">
-          <label htmlFor="email">Email:</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
         <div className="form-group">
           <label htmlFor="password">Password:</label>
           <input

@@ -7,10 +7,10 @@ class User(db.Model):
     __tablename__ = 'users'
 
     user_id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50), unique=True, nullable=False)
+    username = db.Column(db.String(50), nullable=False)
     password = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), nullable=False)
-    email = db.Column(db.String(100), unique=True, nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=True)
 
     __table_args__ = (
         db.CheckConstraint("role IN ('student', 'instructor', 'admin')", name='check_valid_role'),
@@ -19,6 +19,9 @@ class User(db.Model):
 
     def set_password(self, password):
         self.password = generate_password_hash(password)
+
+    def set_email(self, email):
+        self.email = email
 
     def check_password(self, password):
         return check_password_hash(self.password, password)
@@ -97,14 +100,22 @@ class Student(db.Model):
 class Instructor(db.Model):
     __tablename__ = 'instructors'
 
-    instructor_id = db.Column(db.Integer, primary_key=True)
+    instructor_id = db.Column(db.String, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id', ondelete='CASCADE'), unique=True, nullable=False)
-    name = db.Column(db.String(100), nullable=False)
+    # name = db.Column(db.String(100), nullable=False)
     department_id = db.Column(db.Integer, db.ForeignKey('departments.department_id', ondelete='CASCADE'), nullable=False)
     research_areas = db.Column(db.Text)
 
     user = db.relationship('User', backref=db.backref('instructor', uselist=False, cascade="all, delete-orphan"))
 
+    def instructor_id_generator(self):
+        return self.user.username + '_' + str(self.user.user_id)
+    
+    def __init__(self, user_id, department_id, instructor_id, research_areas=None):
+        self.user_id = user_id
+        self.department_id = department_id
+        self.instructor_id = instructor_id or self.instructor_id_generator()
+        self.research_areas = research_areas
 
 class Course(db.Model):
     __tablename__ = 'courses'

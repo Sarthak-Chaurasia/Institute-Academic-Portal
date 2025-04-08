@@ -1,10 +1,10 @@
 -- Users table for authentication and role management
 CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
+    username VARCHAR(50) NOT NULL,
     password VARCHAR(255) NOT NULL,
     role VARCHAR(20) NOT NULL CHECK (role IN ('student', 'instructor', 'admin')),
-    email VARCHAR(100) UNIQUE NOT NULL
+    email VARCHAR(100) UNIQUE
 );
 CREATE INDEX idx_user_id ON users(user_id);
 
@@ -32,9 +32,9 @@ CREATE INDEX idx_student_id ON students(student_id);
 
 -- Instructors table
 CREATE TABLE instructors (
-    instructor_id SERIAL PRIMARY KEY,
+    instructor_id VARCHAR PRIMARY KEY,
     user_id INT UNIQUE NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    name VARCHAR(100) NOT NULL,
+    -- name VARCHAR(100) NOT NULL,
     department_id INT NOT NULL REFERENCES departments(department_id) ON DELETE CASCADE,
     research_areas TEXT
 );
@@ -64,7 +64,7 @@ CREATE TABLE course_offerings (
     offering_id SERIAL PRIMARY KEY,
     course_id VARCHAR NOT NULL REFERENCES courses(course_id) ON DELETE CASCADE,
     semester_id INT NOT NULL REFERENCES semesters(semester_id) ON DELETE CASCADE,
-    instructor_id INT NOT NULL REFERENCES instructors(instructor_id) ON DELETE CASCADE,
+    instructor_id VARCHAR NOT NULL REFERENCES instructors(instructor_id) ON DELETE CASCADE,
     max_seats INT NOT NULL CHECK (max_seats > 0),
     current_seats INT NOT NULL DEFAULT 0 CHECK (current_seats <= max_seats)
 );

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import jwt_decode from 'jwt-decode';
 import StudentDashboard from './StudentDashboard';
-// import InstructorDashboard from './InstructorDashboard';
+import InstructorDashboard from './InstructorDashboard';
 // import AdminDashboard from './AdminDashboard';
 
 function Dashboard() {
@@ -33,8 +33,8 @@ function Dashboard() {
   switch (role) {
     case 'student':
       return <StudentDashboard />;
-    // case 'instructor':
-    //   return <InstructorDashboard />;
+    case 'instructor':
+      return <InstructorDashboard />;
     // case 'admin':
     //   return <AdminDashboard />;
     default:
