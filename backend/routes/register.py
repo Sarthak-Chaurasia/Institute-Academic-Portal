@@ -51,7 +51,7 @@ def get_personal_details():
 
 
 @register_bp.route('', methods=['POST'])
-# @jwt_required()
+@jwt_required()
 def register():
     print("Headers received:", dict(request.headers)) 
     try:
