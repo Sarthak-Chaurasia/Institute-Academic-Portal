@@ -10,6 +10,7 @@ import PersonalDetails from './components/PersonalDetails';
 import { isRegistered , isUser } from './api';
 import InstructorDashboard from './components/InstructorDashboard';
 import StudentDashboard from './components/StudentDashboard';
+import RegisterCourses from './components/Register_courses';
 
 
 
@@ -26,6 +27,7 @@ function App() {
         <Route path="/student-dashboard" render={() => (isRegistered() ? <StudentDashboard /> : <Redirect to="/registration" />)} />
         <Route path="/courses" render={() => (isRegistered() ? <Courses /> : <Redirect to="/registration" />)} />
         <Route path="/personal-details" render={() => (isRegistered() ? <PersonalDetails /> : <Redirect to="/registration" />)} />
+        <Route path="/register_courses" render={() => (isRegistered() ? <RegisterCourses /> : <Redirect to="/registration" />)} />
         <Route path="/" component={Signup} />
       </Switch>
     </Router>

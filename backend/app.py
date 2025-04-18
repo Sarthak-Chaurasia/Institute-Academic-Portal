@@ -40,10 +40,11 @@ def create_app():
     from routes.auth import auth_bp
     from routes.courses import courses_bp
     from routes.register import register_bp
+    from routes.register_courses import register_courses_bp
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(courses_bp, url_prefix='/api/courses')
     app.register_blueprint(register_bp, url_prefix='/api/register')
-
+    app.register_blueprint(register_courses_bp, url_prefix='/api/register_courses')
     # Create tables
     with app.app_context():
         db.create_all()

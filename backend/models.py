@@ -241,3 +241,50 @@ class AuditLog(db.Model):
     action = db.Column(db.String(50), nullable=False)
     timestamp = db.Column(db.DateTime, server_default=db.func.current_timestamp())
     details = db.Column(db.Text)
+
+class Tag(db.Model):
+    __tablename__ = 'tag'
+
+    tag_id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+
+
+class CompletedCourse(db.Model):
+    __tablename__ = 'completed_courses'
+
+    student_id = db.Column(db.String, db.ForeignKey('students.student_id', ondelete='CASCADE'), primary_key=True)
+    course_id = db.Column(db.String, db.ForeignKey('courses.course_id', ondelete='CASCADE'), primary_key=True)
+    status = db.Column(db.String(10), nullable=False)
+
+    __table_args__ = (
+        db.CheckConstraint("status IN ('passed', 'failed')", name='check_completed_status_valid'),
+    )
+
+class AllowedTag(db.Model):
+    __tablename__ = 'allowedtags'
+
+    allowed_tag_id = db.Column(db.Integer, primary_key=True)  # Unique ID for allowed tag mapping
+    department_id = db.Column(db.Integer, db.ForeignKey('departments.department_id', ondelete='CASCADE'), nullable=False)
+    course_id = db.Column(db.String, db.ForeignKey('courses.course_id', ondelete='CASCADE'), nullable=False)
+    tag_id = db.Column(db.Integer, db.ForeignKey('tag.tag_id', ondelete='CASCADE'), nullable=False)
+
+    department = db.relationship('Department', backref=db.backref('allowedtags', lazy='dynamic'))
+    course = db.relationship('Course', backref=db.backref('allowedtags', lazy='dynamic'))
+    tag = db.relationship('Tag', backref=db.backref('allowedtags', lazy='dynamic'))
+
+    __table_args__ = (
+        db.UniqueConstraint('department_id', 'course_id', 'tag_id'),
+    )
+
+    # def __init__(self, department_id, course_id, tag_id):
+    #     self.department_id = department_id
+    #     self.course_id = course_id
+    #     self.tag_id = tag_id
+
+    # def to_dict(self):
+    #     return {
+    #         'allowed_tag_id': self.allowed_tag_id,
+    #         'department_id': self.department_id,
+    #         'course_id': self.course_id,
+    #         'tag_id': self.tag_id
+    #     }

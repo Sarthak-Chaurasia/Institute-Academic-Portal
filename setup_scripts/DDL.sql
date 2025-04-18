@@ -4,7 +4,7 @@ CREATE TABLE users (
     username VARCHAR(50) NOT NULL,
     password VARCHAR(255) NOT NULL,
     role VARCHAR(20) NOT NULL CHECK (role IN ('student', 'instructor', 'admin')),
-    email VARCHAR(100) UNIQUE
+    email VARCHAR(100)
 );
 CREATE INDEX idx_user_id ON users(user_id);
 
@@ -120,4 +120,28 @@ CREATE TABLE audit_logs (
     action VARCHAR(50) NOT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     details TEXT
+);
+
+-- Table for Tags
+CREATE TABLE Tag (
+    tag_id SERIAL PRIMARY KEY,
+    name TEXT UNIQUE NOT NULL
+);
+
+-- Table for Completed Courses
+CREATE TABLE CompletedCourse (
+    student_id INT REFERENCES Students(user_id),
+    course_id TEXT REFERENCES Courses(course_id),
+    status TEXT CHECK (status IN ('passed', 'failed')),
+    PRIMARY KEY (student_id, course_id)
+);
+
+
+-- Table for Allowed Tags with mapping
+CREATE TABLE AllowedTags (
+    allowed_tag_id SERIAL PRIMARY KEY,
+    department_id INT REFERENCES departments(department_id) ON DELETE CASCADE,
+    course_id TEXT REFERENCES courses(course_id) ON DELETE CASCADE,
+    tag_id INT REFERENCES Tag(tag_id) ON DELETE CASCADE,
+    CONSTRAINT uq_allowed_tag UNIQUE (department_id, course_id, tag_id)  -- Ensure no duplicate mappings
 );
