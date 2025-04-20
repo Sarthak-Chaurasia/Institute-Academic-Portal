@@ -15,6 +15,7 @@ const PersonalDetails = () => {
           const userRole = decoded?.role;
           setRole(userRole);
           // const response = await api.get(`/register/personal-details`);
+          console.log(api)
           api.get(`/register/personal-details`)
           .then(res => setStudentDetails(res.data))
           .catch(err => console.error('Failed to fetch student data:', err));

@@ -1,1 +1,3 @@
-instructor_id,user_id,name,department_id,research_areas
+instructor_id,user_id,department_id,research_areas
+sarthak,2,1,
+vishnu,3,2,

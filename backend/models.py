@@ -29,6 +29,13 @@ class User(db.Model):
     def to_dict(self):
         return {'user_id': self.user_id, 'username': self.username, 'role': self.role, 'email': self.email}
 
+class Admin(db.Model):
+    __tablename__ = 'admins'
+
+    admin_id = db.Column(db.String, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id', ondelete='CASCADE'), unique=True, nullable=False)
+
+    user = db.relationship('User', backref=db.backref('admin', uselist=False, cascade="all, delete-orphan"))
 
 class Department(db.Model):
     __tablename__ = 'departments'
@@ -58,8 +65,10 @@ class Student(db.Model):
     additional_personal_info = db.Column(db.Text, nullable=True)
 
     user = db.relationship('User', backref=db.backref('student', uselist=False, cascade="all, delete-orphan"))
-    enrollments = db.relationship('Enrollment', backref='student', lazy='dynamic', cascade="all, delete-orphan")
-    waitlists = db.relationship('Waitlist', backref='student', lazy='dynamic', cascade="all, delete-orphan")
+    # courses = db.relationship('Course', secondary='completed_courses', backref='students', lazy='dynamic')
+    # grades = db.relationship('Grade', backref='student', lazy='dynamic', cascade="all, delete-orphan")
+    # enrollments = db.relationship('Enrollment', backref='student', lazy='dynamic', cascade="all, delete-orphan")
+    # waitlists = db.relationship('Waitlist', backref='student', lazy='dynamic', cascade="all, delete-orphan")
 
     __table_args__ = (
         db.UniqueConstraint('student_id', name='uq_student_id'),
@@ -107,6 +116,8 @@ class Instructor(db.Model):
     research_areas = db.Column(db.Text)
 
     user = db.relationship('User', backref=db.backref('instructor', uselist=False, cascade="all, delete-orphan"))
+    offerings = db.relationship('CourseOffering', backref='instructor', lazy='dynamic', cascade="all, delete-orphan")
+
 
     def instructor_id_generator(self):
         return self.user.username + '_' + str(self.user.user_id)
@@ -131,7 +142,9 @@ class Course(db.Model):
         db.Index('idx_course_id', 'course_id'),
     )
 
+    prerequisites = db.relationship('Prerequisite', backref='course', lazy='dynamic', cascade="all, delete-orphan", foreign_keys='[Prerequisite.course_id]')
     offerings = db.relationship('CourseOffering', backref='course', lazy='dynamic', cascade="all, delete-orphan")
+    allowed_tags = db.relationship('AllowedTag', backref='course_for_tag', lazy='dynamic', cascade="all, delete-orphan")
 
     def to_dict(self):
         return {
@@ -141,6 +154,96 @@ class Course(db.Model):
             'credits': self.credits,
             'department_id': self.department_id
         }
+    def add_prereqs_recursive(self, prereq_course_ids):
+        visited = set()
+        queue = list(prereq_course_ids)
+
+        while queue:
+            current = queue.pop(0)
+            if current in visited:
+                continue
+            visited.add(current)
+
+            if Prerequisite.query.filter_by(
+                course_id=self.course_id,
+                prereq_course_id=current
+            ).first():
+                continue
+
+            self.prerequisites.append(Prerequisite(
+                course_id=self.course_id,
+                prereq_course_id=current
+            ))
+
+            indirects = Prerequisite.query.with_entities(
+                Prerequisite.prereq_course_id
+            ).filter_by(course_id=current).all()
+            queue.extend([pr[0] for pr in indirects])
+
+    def edit_prereqs_recursive(self, prereq_course_ids):
+        for cid in prereq_course_ids:
+            is_removal = isinstance(cid, str) and cid.startswith('-')
+            course_id = cid[1:] if is_removal else cid
+
+            if is_removal:
+                Prerequisite.query.filter_by(
+                    course_id=self.course_id,
+                    prereq_course_id=course_id
+                ).delete()
+            else:
+                self.add_prereqs_recursive([course_id])
+
+    def add_tags(self, tag_entries):
+        for entry in tag_entries:
+            if '=' in entry:
+                tag_base, dept_part = entry.split('=')
+                dept_ids = [int(d.strip()) for d in dept_part.split(',')]
+            else:
+                tag_base = entry.strip()
+                dept_ids = [0]  # All departments by default
+
+            tag = Tag.query.filter_by(name=tag_base).first()
+            if not tag:
+                raise ValueError(f"Tag '{tag_base}' not found.")
+
+            for dept_id in dept_ids:
+                allowed_tag = AllowedTag(
+                    department_id=dept_id,
+                    tag_id=tag.tag_id
+                )
+                self.allowed_tags.append(allowed_tag)
+
+    def edit_tags(self, tag_entries):
+        for entry in tag_entries:
+            is_removal = entry.startswith('-')
+            raw = entry[1:] if is_removal else entry
+
+            if '=' in raw:
+                tag_base, dept_part = raw.split('=')
+                dept_ids = [int(d.strip()) for d in dept_part.split(',')]
+            else:
+                tag_base = raw.strip()
+                dept_ids = [0]  # Default to all depts
+
+            tag = Tag.query.filter_by(name=tag_base).first()
+            if not tag:
+                raise ValueError(f"Tag '{tag_base}' not found.")
+
+            for dept_id in dept_ids:
+                if is_removal:
+                    AllowedTag.query.filter_by(
+                        department_id=dept_id,
+                        tag_id=tag.tag_id,
+                        course_id=self.course_id
+                    ).delete()
+                else:
+                    self.allowed_tags.append(AllowedTag(
+                        department_id=dept_id,
+                        tag_id=tag.tag_id
+                    ))
+
+
+
 
 class Semester(db.Model):
     __tablename__ = 'semesters'
@@ -156,8 +259,8 @@ class Semester(db.Model):
 class CourseOffering(db.Model):
     __tablename__ = 'course_offerings'
 
-    offering_id = db.Column(db.Integer, primary_key=True)
-    course_id = db.Column(db.String, db.ForeignKey('courses.course_id', ondelete='CASCADE'), nullable=False)
+    offering_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    course_id = db.Column(db.String, db.ForeignKey('courses.course_id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
     semester_id = db.Column(db.Integer, db.ForeignKey('semesters.semester_id', ondelete='CASCADE'), nullable=False)
     instructor_id = db.Column(db.Integer, db.ForeignKey('instructors.instructor_id', ondelete='CASCADE'), nullable=False)
     max_seats = db.Column(db.Integer, nullable=False)
@@ -166,10 +269,21 @@ class CourseOffering(db.Model):
     __table_args__ = (
         db.CheckConstraint('max_seats > 0', name='check_max_seats'),
         db.CheckConstraint('current_seats <= max_seats', name='check_current_vs_max'),
+        db.UniqueConstraint('course_id', 'semester_id', name='uix_course_semester'),
     )
 
     enrollments = db.relationship('Enrollment', backref='offering', lazy='dynamic', cascade="all, delete-orphan")
     waitlists = db.relationship('Waitlist', backref='offering', lazy='dynamic', cascade="all, delete-orphan")
+
+    def to_dict(self):
+        return {
+            'offering_id': self.offering_id,
+            'course_id': self.course_id,
+            'semester_id': self.semester_id,
+            'instructor_id': self.instructor_id,
+            'max_seats': self.max_seats,
+            'current_seats': self.current_seats
+        }
 
 
 class Enrollment(db.Model):
@@ -213,17 +327,25 @@ class Grade(db.Model):
 class Prerequisite(db.Model):
     __tablename__ = 'prerequisites'
 
-    prerequisite_id = db.Column(db.Integer, primary_key=True)
-    course_id = db.Column(db.String, db.ForeignKey('courses.course_id', ondelete='CASCADE'), nullable=False)
-    prereq_course_id = db.Column(db.String, db.ForeignKey('courses.course_id', ondelete='CASCADE'), nullable=False)
+    prerequisite_id = db.Column(db.Integer, primary_key=True,autoincrement=True)
+    course_id = db.Column(db.String, db.ForeignKey('courses.course_id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
+    prereq_course_id = db.Column(db.String, db.ForeignKey('courses.course_id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
 
+    # course = db.relationship('Course', foreign_keys=[course_id], backref=db.backref('prerequisites', lazy='dynamic'))
+    # prereq_course = db.relationship('Course', foreign_keys=[prereq_course_id], backref=db.backref('prereqs_for', lazy='dynamic'))
+    def to_dict(self):
+        return {
+            'prerequisite_id': self.prerequisite_id,
+            'course_id': self.course_id,
+            'prereq_course_id': self.prereq_course_id
+        }
 
 class CourseReview(db.Model):
     __tablename__ = 'course_reviews'
 
     review_id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.String, db.ForeignKey('students.student_id', ondelete='CASCADE'), nullable=False)
-    course_id = db.Column(db.String, db.ForeignKey('courses.course_id', ondelete='CASCADE'), nullable=False)
+    course_id = db.Column(db.String, db.ForeignKey('courses.course_id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
     rating = db.Column(db.Integer, nullable=False)
     comment = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, server_default=db.func.current_timestamp())
@@ -253,7 +375,7 @@ class CompletedCourse(db.Model):
     __tablename__ = 'completed_courses'
 
     student_id = db.Column(db.String, db.ForeignKey('students.student_id', ondelete='CASCADE'), primary_key=True)
-    course_id = db.Column(db.String, db.ForeignKey('courses.course_id', ondelete='CASCADE'), primary_key=True)
+    course_id = db.Column(db.String, db.ForeignKey('courses.course_id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True)
     status = db.Column(db.String(10), nullable=False)
 
     __table_args__ = (
@@ -265,26 +387,17 @@ class AllowedTag(db.Model):
 
     allowed_tag_id = db.Column(db.Integer, primary_key=True)  # Unique ID for allowed tag mapping
     department_id = db.Column(db.Integer, db.ForeignKey('departments.department_id', ondelete='CASCADE'), nullable=False)
-    course_id = db.Column(db.String, db.ForeignKey('courses.course_id', ondelete='CASCADE'), nullable=False)
+    course_id = db.Column(db.String, db.ForeignKey('courses.course_id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
     tag_id = db.Column(db.Integer, db.ForeignKey('tag.tag_id', ondelete='CASCADE'), nullable=False)
-
-    department = db.relationship('Department', backref=db.backref('allowedtags', lazy='dynamic'))
-    course = db.relationship('Course', backref=db.backref('allowedtags', lazy='dynamic'))
-    tag = db.relationship('Tag', backref=db.backref('allowedtags', lazy='dynamic'))
 
     __table_args__ = (
         db.UniqueConstraint('department_id', 'course_id', 'tag_id'),
     )
 
-    # def __init__(self, department_id, course_id, tag_id):
-    #     self.department_id = department_id
-    #     self.course_id = course_id
-    #     self.tag_id = tag_id
-
-    # def to_dict(self):
-    #     return {
-    #         'allowed_tag_id': self.allowed_tag_id,
-    #         'department_id': self.department_id,
-    #         'course_id': self.course_id,
-    #         'tag_id': self.tag_id
-    #     }
+    def to_dict(self):
+        return {
+            'allowed_tag_id': self.allowed_tag_id,
+            'department_id': self.department_id,
+            'course_id': self.course_id,
+            'tag_id': self.tag_id
+        }

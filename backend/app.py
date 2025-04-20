@@ -13,10 +13,12 @@ load_dotenv(dotenv_path=env_path)
 def create_app():
     app = Flask(__name__)
     # CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
-    CORS(app, resources={r"/api/*": {
-    "origins": "http://localhost:3000",
-    "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    "allow_headers": ["Content-Type", "Authorization"],}})
+    # CORS(app, resources={r"/api/*": {
+    # "origins": "http://localhost:3000",
+    # "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    # "allow_headers": ["Content-Type", "Authorization"],}},supports_credentials=True)
+    CORS(app, supports_credentials=True)  # For allowing all origins
+
 
 
 
@@ -48,6 +50,7 @@ def create_app():
     # Create tables
     with app.app_context():
         db.create_all()
+        
 
     return app
 

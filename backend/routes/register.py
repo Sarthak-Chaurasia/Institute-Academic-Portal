@@ -8,8 +8,9 @@ from datetime import datetime
 register_bp = Blueprint('register', __name__)
 
 @register_bp.route('/personal-details', methods=['GET'])
-@jwt_required()
+# @jwt_required()
 def get_personal_details():
+    print("HEADERS:", dict(request.headers))
     verify_jwt_in_request()
     user_id = get_jwt_identity()
     user_role = get_jwt()['role']
@@ -47,7 +48,6 @@ def get_personal_details():
     else:
         return jsonify({"msg": "Invalid role"}), 400
     
-
 
 
 @register_bp.route('', methods=['POST'])

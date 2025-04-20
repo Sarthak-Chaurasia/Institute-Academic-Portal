@@ -1,2 +1,3 @@
 student_id,user_id,department_id,program,year_of_admission,contact_number,hostel_room,dob,nationality,additional_personal_info
-22B0101,1,1,Bachelor,2022,,,,,
+22B0101,1,1,Bachelor,2022,1234567890.0,H6-271,,,
+23M0301,4,3,Master,2023,,H3-291,2004-05-26,,

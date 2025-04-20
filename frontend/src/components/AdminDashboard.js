@@ -7,15 +7,13 @@ function handleLogout() {
   window.location.href = '/login'; // Redirect to the login page
 }
 
-function InstructorDashboard() {
+function AdminDashboard() {
   return (
     <div className="container">
       <div className="card">
-      <h1 style={{ textAlign: 'center' }}>Instructor Dashboard</h1>
+      <h1 style={{ textAlign: 'center' }}>Admin Dashboard</h1>
       <ul>
         <li><Link to="/courses">All Courses</Link></li>
-        <li><Link to="/personal-details">Personal Details</Link></li>
-        <li><Link to="/instructor-courses">My Courses</Link></li>
         <button onClick={handleLogout}>Logout</button>
         {/* Add more links as needed */}
       </ul>
@@ -24,4 +22,4 @@ function InstructorDashboard() {
   );
 }
 
-export default InstructorDashboard;
+export default AdminDashboard;

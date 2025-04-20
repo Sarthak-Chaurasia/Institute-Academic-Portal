@@ -11,8 +11,9 @@ import { isRegistered , isUser } from './api';
 import InstructorDashboard from './components/InstructorDashboard';
 import StudentDashboard from './components/StudentDashboard';
 import RegisterCourses from './components/Register_courses';
-
-
+import InstrcutorCourses from './components/InstructorCourses';
+import AdminDashboard from './components/AdminDashboard';
+import AboutCourse from './components/AboutCourse';
 
 
 function App() {
@@ -25,9 +26,13 @@ function App() {
         <Route path="/dashboard" render={() => (isRegistered() ? <Dashboard /> : <Redirect to="/registration" />)} />
         <Route path="/instructor-dashboard" render={() => (isRegistered() ? <InstructorDashboard /> : <Redirect to="/registration" />)} />
         <Route path="/student-dashboard" render={() => (isRegistered() ? <StudentDashboard /> : <Redirect to="/registration" />)} />
+        <Route path="/courses/:courseId" render={() => (isRegistered() ? <AboutCourse /> : <Redirect to="/registration" />)} />
         <Route path="/courses" render={() => (isRegistered() ? <Courses /> : <Redirect to="/registration" />)} />
         <Route path="/personal-details" render={() => (isRegistered() ? <PersonalDetails /> : <Redirect to="/registration" />)} />
         <Route path="/register_courses" render={() => (isRegistered() ? <RegisterCourses /> : <Redirect to="/registration" />)} />
+        <Route path="/instructor-courses" render={() => (isRegistered() ? <InstrcutorCourses /> : <Redirect to="/registration" />)} />
+        {/* <Route path="/add-course" render={() => (isRegistered() ? <InstrcutorCourses /> : <Redirect to="/signup" />)} /> */}
+        <Route path="/admin-dashboard" render={() => (isRegistered() ? <AdminDashboard /> : <Redirect to="/registration" />)} />
         <Route path="/" component={Signup} />
       </Switch>
     </Router>

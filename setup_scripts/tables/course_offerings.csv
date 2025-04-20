@@ -1,1 +1,7 @@
 offering_id,course_id,semester_id,instructor_id,max_seats,current_seats
+1,EE114,1,vishnu,50,47
+2,CS101,1,sarthak,60,60
+3,CS213,1,sarthak,50,49
+4,EE204,2,vishnu,45,44
+5,CS219,2,sarthak,40,35
+6,CS786,1,sarthak,100,0

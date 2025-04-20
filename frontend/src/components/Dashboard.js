@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import jwt_decode from 'jwt-decode';
 import StudentDashboard from './StudentDashboard';
 import InstructorDashboard from './InstructorDashboard';
-// import AdminDashboard from './AdminDashboard';
+import AdminDashboard from './AdminDashboard';
 
 function Dashboard() {
   const [role, setRole] = useState(null);
@@ -37,13 +37,13 @@ function Dashboard() {
       return <StudentDashboard />;
     case 'instructor':
       return <InstructorDashboard />;
-    // case 'admin':
-    //   return <AdminDashboard />;
+    case 'admin':
+      return <AdminDashboard />;
     default:
       // return <div>Unauthorized</div>;
       return (
         <div className="container">
-      <div className="card">
+          <div className="card">
           <h1>Unauthorized</h1>
           <p>You do not have permission to access this page.</p>
           </div>

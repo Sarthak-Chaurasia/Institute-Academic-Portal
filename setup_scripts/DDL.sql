@@ -8,6 +8,14 @@ CREATE TABLE users (
 );
 CREATE INDEX idx_user_id ON users(user_id);
 
+
+CREATE TABLE admins (
+    admin_id VARCHAR PRIMARY KEY,
+    user_id INTEGER UNIQUE NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+
 -- Departments table
 CREATE TABLE departments (
     department_id SERIAL PRIMARY KEY,
@@ -62,11 +70,12 @@ CREATE TABLE semesters (
 -- CourseOfferings table
 CREATE TABLE course_offerings (
     offering_id SERIAL PRIMARY KEY,
-    course_id VARCHAR NOT NULL REFERENCES courses(course_id) ON DELETE CASCADE,
+    course_id VARCHAR NOT NULL REFERENCES courses(course_id) ON DELETE CASCADE ON UPDATE CASCADE,
     semester_id INT NOT NULL REFERENCES semesters(semester_id) ON DELETE CASCADE,
     instructor_id VARCHAR NOT NULL REFERENCES instructors(instructor_id) ON DELETE CASCADE,
     max_seats INT NOT NULL CHECK (max_seats > 0),
-    current_seats INT NOT NULL DEFAULT 0 CHECK (current_seats <= max_seats)
+    current_seats INT NOT NULL DEFAULT 0 CHECK (current_seats <= max_seats),
+    CONSTRAINT uq_course_semester UNIQUE (course_id, semester_id)
 );
 
 -- Enrollments table
@@ -99,15 +108,15 @@ CREATE TABLE grades (
 -- Prerequisites table
 CREATE TABLE prerequisites (
     prerequisite_id SERIAL PRIMARY KEY,
-    course_id VARCHAR NOT NULL REFERENCES courses(course_id) ON DELETE CASCADE,
-    prereq_course_id VARCHAR NOT NULL REFERENCES courses(course_id) ON DELETE CASCADE
+    course_id VARCHAR NOT NULL REFERENCES courses(course_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    prereq_course_id VARCHAR NOT NULL REFERENCES courses(course_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CourseReviews table
 CREATE TABLE course_reviews (
     review_id SERIAL PRIMARY KEY,
     student_id VARCHAR NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
-    course_id VARCHAR NOT NULL REFERENCES courses(course_id) ON DELETE CASCADE,
+    course_id VARCHAR NOT NULL REFERENCES courses(course_id) ON DELETE CASCADE ON UPDATE CASCADE,
     rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
     comment TEXT,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -131,7 +140,7 @@ CREATE TABLE Tag (
 -- Table for Completed Courses
 CREATE TABLE CompletedCourse (
     student_id INT REFERENCES Students(user_id),
-    course_id TEXT REFERENCES Courses(course_id),
+    course_id TEXT REFERENCES Courses(course_id) ON DELETE CASCADE ON UPDATE CASCADE,
     status TEXT CHECK (status IN ('passed', 'failed')),
     PRIMARY KEY (student_id, course_id)
 );
@@ -141,7 +150,7 @@ CREATE TABLE CompletedCourse (
 CREATE TABLE AllowedTags (
     allowed_tag_id SERIAL PRIMARY KEY,
     department_id INT REFERENCES departments(department_id) ON DELETE CASCADE,
-    course_id TEXT REFERENCES courses(course_id) ON DELETE CASCADE,
+    course_id TEXT REFERENCES courses(course_id) ON DELETE CASCADE ON UPDATE CASCADE,
     tag_id INT REFERENCES Tag(tag_id) ON DELETE CASCADE,
     CONSTRAINT uq_allowed_tag UNIQUE (department_id, course_id, tag_id)  -- Ensure no duplicate mappings
 );

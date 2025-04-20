@@ -18,6 +18,7 @@ function StudentDashboard() {
       <ul>
         <li><Link to="/courses">All Courses</Link></li>
         <li><Link to="/personal-details">Personal Details</Link></li>
+        <li><Link to="/register_courses">Register for Courses</Link></li>
         <button onClick={handleLogout}>Logout</button>
         {/* Add more links as needed */}
       </ul>

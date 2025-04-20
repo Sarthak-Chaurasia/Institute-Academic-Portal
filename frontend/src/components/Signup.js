@@ -31,6 +31,11 @@ const Signup = () => {
         return;
       }
       localStorage.setItem('token', access_token);
+      decoded = jwt_decode(access_token);
+      role = decoded?.role;
+      if (role == 'admin') {
+        history.push('/dashboard');
+      }
       history.push('/registration');
     } catch (err) {
       setError(err.response?.data?.msg || 'An error occurred during signup');

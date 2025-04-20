@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-from models import db, User, Student, Instructor  # Import from models
+from models import db, User, Student, Instructor, Admin  # Import from models
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -14,11 +14,6 @@ def signup():
         print("Missing fields detected")
         return jsonify({"msg": "Missing required fields: username, password, role"}), 400
     
-    # print("Checking if username exists...")
-    # if User.query.filter_by(username=data['username']).first():
-    #     print(f"Username {data['username']} already taken")
-    #     return jsonify({"msg": "Username already taken"}), 409
-    
     valid_roles = ['student', 'instructor', 'admin']
     if data['role'] not in valid_roles:
         print(f"Invalid role: {data['role']}")
@@ -29,15 +24,6 @@ def signup():
         # email = data.get("email")
         username = data['username']
         role = data['role']
-        # if not email:
-        #     print("No email provided, setting to None")
-        #     email = None
-        # if not username:
-        #     print("No username provided, setting to None")
-        #     username = None
-        # if not role:
-        #     print("No role provided, setting to None")
-        #     role = None
         new_user = User(username=username, role=role)
         new_user.set_password(data['password'])
         db.session.add(new_user)
@@ -45,6 +31,10 @@ def signup():
         token = create_access_token(identity=str(new_user.user_id), additional_claims={"role": new_user.role}) 
         print("token: ", token, "user: ", new_user.username," role: ", new_user.role)
         print("User created successfully")
+        if role == 'admin':
+            new_admin = Admin(user_id=new_user.user_id,admin_id='admin'+str(new_user.user_id))
+            db.session.add(new_admin)
+            db.session.commit()
         return jsonify({
             "access_token": token,
             "user": new_user.to_dict()
@@ -62,14 +52,17 @@ def login():
     # user = User.query.filter_by(username=data.get('username')).first()
     student = Student.query.filter_by(student_id=data.get('Id')).first() or None
     instructor = Instructor.query.filter_by(instructor_id=data.get('Id')).first() or None
+    admin = Admin.query.filter_by(admin_id=data.get('Id')).first() or None
     print("Student: ", student, "Instructor: ", instructor)
-    if not student and not instructor:
+    if not student and not instructor and not admin:
         print("User not found")
         return jsonify({"msg": "User not found"}), 404
     if student:
         user = student.user
     elif instructor:
         user = instructor.user
+    elif admin:
+        user = admin.user
     print("User found: ", user.username, "Role: ", user.role)
     if user and user.check_password(data.get('password')):
         token = create_access_token(identity=str(user.user_id), additional_claims={"role": user.role})

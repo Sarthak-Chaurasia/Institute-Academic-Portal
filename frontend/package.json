@@ -28,7 +28,6 @@
   "version": "1.0.0",
   "description": "npm install react-scripts --save",
   "main": "index.js",
-  "devDependencies": {},
   "keywords": [],
   "author": "",
   "license": "ISC"
