@@ -5,6 +5,8 @@ from models import db, User, Student, Instructor, Admin  # Import from models
 auth_bp = Blueprint('auth', __name__)
 
 
+
+
 @auth_bp.route('/signup', methods=['POST'])
 def signup():
     """Register a new user and return a JWT token."""

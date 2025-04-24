@@ -235,4 +235,5 @@ def get_course(course_id):
         course_dict['prerequisites'] = prerequisites
         course_dict['allowed_tags'] = allowed_tags
         return jsonify(course_dict), 200
-    # return jsonify(course.to_dict()), 200
+    
+    return jsonify(course.to_dict()), 200

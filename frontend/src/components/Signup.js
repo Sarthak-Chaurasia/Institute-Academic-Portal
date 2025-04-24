@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api';
 import { useHistory } from 'react-router-dom/cjs/react-router-dom.min';
+import jwt_decode from "jwt-decode";
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -25,18 +26,27 @@ const Signup = () => {
 
     try {
       const response = await api.post('/auth/signup', formData);
-      const { access_token } = response.data;
+      console.log("Ye mila hai", response);
+      console.log("Ye mila hai", response.data);
+      console.log("Okay");
+      const { access_token, user } = response.data;
       if (!access_token) {
         setError('Access token not found in response');
         return;
       }
       localStorage.setItem('token', access_token);
-      decoded = jwt_decode(access_token);
-      role = decoded?.role;
-      if (role == 'admin') {
-        history.push('/dashboard');
+      try {
+        const decoded = jwt_decode(access_token);
+        const role = decoded?.role;
+        if (role == 'admin') {
+          history.push('/dashboard');
+        }
+        console.log("Decoded JWT:", decoded);
+      } catch (error) {
+        console.error("JWT Decode Error:", error.message);
       }
       history.push('/registration');
+
     } catch (err) {
       setError(err.response?.data?.msg || 'An error occurred during signup');
     }

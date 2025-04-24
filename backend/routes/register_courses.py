@@ -34,17 +34,16 @@ def get_course_offerings(course_code):
         'current_seats': offering.current_seats
     }), 200
 
-@register_courses_bp.route('/check', methods=['GET'])
+@register_courses_bp.route('/check/<student_id>/<course_id>', methods=['GET'])
 def check_eligibility():
     # course_id = request.args.get('course_id')
     # # Simulated user ID (use JWT in production)
     # student_id = 1  
 
-    # prereq_completed = True
-    # passed_before = CompletedCourse.query.filter_by(student_id=student_id, course_id=course_id, status='passed').first()
-    # if passed_before:
-    #     return jsonify({'allowed': False, 'reason': 'Already completed this course successfully'}), 200
-
+    passed_before = CompletedCourse.query.filter_by(student_id=student_id, course_id=course_id, status='passed').first()
+    if passed_before:
+        return jsonify({'allowed': False, 'reason': 'Already completed this course successfully'}), 200
+    
     # if not prereq_completed:
     #     return jsonify({'allowed': False, 'reason': 'Missing prerequisites'}), 200
 
@@ -54,10 +53,6 @@ def check_eligibility():
 def get_tags(course_id):
     print("checking tags")
     # Get the allowed tags for the given course by joining with the Tag table
-    allowed_tags = db.session.query(AllowedTag).join(Tag, AllowedTag.tag_id == Tag.tag_id).filter(AllowedTag.course_id == course_id).all()
-    print(allowed_tags)
-    # Extract tag names associated with the course
-    tags = [tag.tag.name for tag in allowed_tags]
-    print(tags)
-
+    allowed_tags = db.session.query(Tag).join(AllowedTag, AllowedTag.tag_id == Tag.tag_id).filter(AllowedTag.course_id == course_id).all()
+    tags = [taggo.name for taggo in allowed_tags]
     return jsonify({'tags': tags}), 200
