@@ -1,6 +1,9 @@
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 
+# file has models for
+# User, Admin, Department, Student, Instructor, Course, Semester, CourseOffering, Enrollment, Waitlist, Grade, Prerequisite, CourseReview, AuditLog, Tag, CompletedCourse, AllowedTag
+# and their relationships
 db = SQLAlchemy()
 
 class User(db.Model):

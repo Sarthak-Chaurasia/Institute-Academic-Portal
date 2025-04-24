@@ -14,6 +14,7 @@ const Registration = () => {
     dob: '',
     nationality: '',
     additional_info: '',
+    research_areas: '',
     username: '',
   });
   const [userRole, setRole] = useState('');
@@ -151,7 +152,7 @@ const Registration = () => {
 
             <div>
               <label>Research Areas:</label>
-              <textarea name="additional_info" value={formData.additional_info} onChange={handleChange} />
+              <textarea name="research_areas" value={formData.research_areas} onChange={handleChange} />
             </div>
 
             <button type="submit">Register</button>
