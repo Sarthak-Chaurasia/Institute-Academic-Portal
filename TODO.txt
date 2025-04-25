@@ -1,0 +1,10 @@
+// backend for registration:
+- tags checking (tk for backend)
+- check eligibility for registration (done that course bfore? / prereq completed? display error, and option to register with instructor approval) (tk for backend)
+- course page pe prereqs bhi dikhao
+- (courses ki wishlist?)
+- db : how does it work
+
+
+- course filters / searching (by tags, by course type, by instructor, by semester, by time, slots etc.)
+- waitlist / enrollment 
