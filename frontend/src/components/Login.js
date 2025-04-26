@@ -19,6 +19,7 @@ function Login() {
       console.log('Login response:', response.data);
       if(response.data.access_token){
         localStorage.setItem('token', response.data.access_token);
+        localStorage.setItem('refresh_token', response.data.refresh_token);
         console.log('Token stored in localStorage:', response.data.access_token);
       }
       else{

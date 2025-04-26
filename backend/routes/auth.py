@@ -1,11 +1,11 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, create_refresh_token, JWTManager, get_jwt
 from models import db, User, Student, Instructor, Admin  # Import from models
 
 auth_bp = Blueprint('auth', __name__)
+jwt = JWTManager()  # Initialize JWTManager
 
-
-
+BLOCKLIST = set()
 
 @auth_bp.route('/signup', methods=['POST'])
 def signup():
@@ -68,9 +68,30 @@ def login():
     print("User found: ", user.username, "Role: ", user.role)
     if user and user.check_password(data.get('password')):
         token = create_access_token(identity=str(user.user_id), additional_claims={"role": user.role})
+        refresh_token = create_refresh_token(identity=str(user.user_id), additional_claims={"role": user.role})
         print("token: ", token, "user: ", user.username," role: ", user.role)
-        return jsonify(access_token=token), 200
+        return jsonify(access_token=token, refresh_token = refresh_token), 200
     return jsonify({"msg": "Invalid credentials"}), 401
+
+@auth_bp.route('/refresh', methods=['POST'])
+@jwt_required(refresh=True)
+def refresh():
+    identity = get_jwt_identity()
+    new_access = create_access_token(identity=identity)
+    return jsonify({ "access_token": new_access }), 200
+
+@jwt.token_in_blocklist_loader
+def check_if_token_revoked(jwt_header, jwt_payload):
+    jti = jwt_payload["jti"]
+    return jti in BLOCKLIST
+
+@auth_bp.route('/logout_refresh', methods=['DELETE'])
+@jwt_required(refresh=True)
+def logout_refresh():
+    jti = get_jwt()["jti"]
+    BLOCKLIST.add(jti)
+    return jsonify({"msg": "Refresh token revoked"}), 200
+
 
 def role_required(role):
     #this jwt_required might cause error as it is related to cookies which we are not doing

@@ -4,6 +4,7 @@
 - course page pe prereqs bhi dikhao
 - (courses ki wishlist?)
 - db : how does it work
+- semester check
 
 
 - course filters / searching (by tags, by course type, by instructor, by semester, by time, slots etc.)

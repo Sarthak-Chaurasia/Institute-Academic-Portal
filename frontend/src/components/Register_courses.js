@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from '../api';
 
 function RegisterCourses() {
   const [courseCode, setCourseCode] = useState("");
@@ -20,23 +20,11 @@ function RegisterCourses() {
       setEligibility({ allowed: false, reason: "" });
       return;
     }
-
-    // fetch eligibility
-    // axios.get("/api/register_courses/check", {
-    //   params: {
-    //     course_id: courseInfo.course_id,
-    //     semester_id: courseInfo.semester_id,
-    //     instructor_id: courseInfo.instructor_id
-    //   }
-    // })
-    // .then(res => setEligibility(res.data))
-    // .catch(() => 
-    // setEligibility({ allowed: false, reason: "Error checking eligibility" }));
   }, [courseInfo]);
 
   const handleSearch = async () => {
     try {
-      const response = await axios.get(`/api/register_courses/get_course/${courseCode}`);
+      const response = await api.get(`/register_courses/get_course/${courseCode}`);
       setCourseInfo(response.data);
       setSelectedTag("");
       setError("");
@@ -45,18 +33,22 @@ function RegisterCourses() {
       setTags([]);
       setError("Course not found or error fetching data.");
     }
-    try{
-        const response = await axios.get(`/api/register_courses/tags/${courseCode}`);
-        console.log("tags", response.data);
-        setTags(response.data.tags);
-        setSelectedTag("");
-        setError("");
+  
+    try {
+      const response = await api.get(`/register_courses/tags/${courseCode}`);
+  
+      console.log("tags", response.data);
+      setTags(response.data.tags);
+      setSelectedTag("");
+      setError("");
     }
     catch (err) {
-        setTags([]);
-        setError("Tags not found or error fetching data.");
+      console.error("Error fetching tags:", err.response?.data || err.message);
+      setTags([]);
+      setError("Tags not found or error fetching data.");
     }
   };
+  
 
   const handleAddToCart = () => {
     if (!eligibility.allowed) {

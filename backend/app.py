@@ -5,6 +5,7 @@ from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from dotenv import load_dotenv
 from models import db, User, Course, Enrollment, Grade  # Import models
+from datetime import timedelta
 
 # Load environment variables
 env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
@@ -33,6 +34,8 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['JWT_SECRET_KEY'] = 'super-secret-key'  # Replace with a secure key
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"]  = timedelta(minutes=15)    # short-lived
+    app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)       # long-lived
 
     # Initialize extensions
     db.init_app(app)
