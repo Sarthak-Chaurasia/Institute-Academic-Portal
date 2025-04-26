@@ -306,12 +306,12 @@ class Enrollment(db.Model):
 
 class Waitlist(db.Model):
     __tablename__ = 'waitlists'
-
     waitlist_id = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(db.String, db.ForeignKey('students.student_id', ondelete='CASCADE'), nullable=False)
+    student_id  = db.Column(db.String,  db.ForeignKey('students.student_id', ondelete='CASCADE'), nullable=False)
     offering_id = db.Column(db.Integer, db.ForeignKey('course_offerings.offering_id', ondelete='CASCADE'), nullable=False)
-    position = db.Column(db.Integer, nullable=False)
-    timestamp = db.Column(db.DateTime, server_default=db.func.current_timestamp())
+    position    = db.Column(db.Integer, nullable=False)
+    tag         = db.Column(db.String(50), nullable=False)          # ← new
+    timestamp   = db.Column(db.DateTime, server_default=db.func.current_timestamp())
 
 
 class Grade(db.Model):
@@ -404,3 +404,5 @@ class AllowedTag(db.Model):
             'course_id': self.course_id,
             'tag_id': self.tag_id
         }
+    
+

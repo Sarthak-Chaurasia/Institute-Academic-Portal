@@ -88,12 +88,20 @@ CREATE TABLE enrollments (
     tag VARCHAR(50)
 );
 
+-- Table for Tags
+CREATE TABLE Tag (
+    tag_id SERIAL PRIMARY KEY,
+    name TEXT UNIQUE NOT NULL
+);
+
 -- Waitlists table
 CREATE TABLE waitlists (
     waitlist_id SERIAL PRIMARY KEY,
     student_id VARCHAR NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
     offering_id INT NOT NULL REFERENCES course_offerings(offering_id) ON DELETE CASCADE,
     position INT NOT NULL,
+    -- tag VARCHAR(50) REFERENCES Tag(tag_id) NOT NULL,
+    tag VARCHAR(50),
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -129,12 +137,6 @@ CREATE TABLE audit_logs (
     action VARCHAR(50) NOT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     details TEXT
-);
-
--- Table for Tags
-CREATE TABLE Tag (
-    tag_id SERIAL PRIMARY KEY,
-    name TEXT UNIQUE NOT NULL
 );
 
 -- Table for Completed Courses

@@ -5,9 +5,14 @@ from routes.auth import role_required
 from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request, get_jwt
 from flask_jwt_extended.exceptions import JWTExtendedException
 from models import AllowedTag
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 from werkzeug.exceptions import HTTPException
 import traceback
+
+# Helper function to get the current semester ID
+def get_current_semester_id():
+    current_semester = Semester.query.order_by(Semester.start_date.desc()).first()
+    return current_semester.semester_id if current_semester else None
 
 
 register_courses_bp = Blueprint('register_courses', __name__)
@@ -81,10 +86,13 @@ def check_eligibility(course_id):
 @register_courses_bp.route('/tags/<course_id>', methods=['GET'])
 @jwt_required()
 def get_tags(course_id):
+    print("Fetching tags for course ID:", course_id)
     user_id = get_jwt_identity()
     student = Student.query.filter_by(user_id=user_id).first()
+    print("1Fetching tags for course ID:", course_id, user_id, student)
     if not student:
         return jsonify({'error': 'Student not found'}), 404
+    print("2Fetching tags for course ID:", course_id)
     student_id = student.student_id
     student_dept = student.department_id
     allowed_tags = db.session.query(Tag).join(AllowedTag, AllowedTag.tag_id == Tag.tag_id).filter(
@@ -93,5 +101,206 @@ def get_tags(course_id):
             AllowedTag.department_id == student_dept,
         )
     ).all()
+    print("3Fetching tags for course ID:", course_id)
     tags = [taggo.name for taggo in allowed_tags]
     return jsonify({'tags': tags}), 200
+
+@register_courses_bp.route('/status', methods=['GET'])
+@jwt_required()
+def registration_status():
+    user_id  = get_jwt_identity()
+    student  = Student.query.filter_by(user_id=user_id).first_or_404()
+    sid      = student.student_id
+
+    out = []
+    # 1) all enrolled
+    for e in Enrollment.query.filter_by(student_id=sid).all():
+        off = e.offering
+        out.append({
+          'offering_id':   off.offering_id,
+          'course_id':     off.course_id,
+          'course_name':   off.course.name,
+          'credits':       off.course.credits,
+          'semester_name': off.semester_id,
+          'tag':           e.tag,
+          'status':        'registered',
+          'waitlist_pos':  None,
+          'waitlist_total':None
+        })
+
+    # 2) all waitlisted
+    for w in Waitlist.query.filter_by(student_id=sid).all():
+        off   = w.offering
+        total = Waitlist.query.filter_by(offering_id=off.offering_id).count()
+        out.append({
+          'offering_id':   off.offering_id,
+          'course_id':     off.course_id,
+          'course_name':   off.course.name,
+          'credits':       off.course.credits,
+          'semester_name': off.semester_id,
+          'tag':           w.tag,
+          'status':        'waitlisted',
+          'waitlist_pos':  w.position,
+          'waitlist_total':total
+        })
+
+    return jsonify(out), 200
+
+@register_courses_bp.route('/register', methods=['POST'])
+@jwt_required()
+def register_course():
+    user_id     = get_jwt_identity()
+    student     = Student.query.filter_by(user_id=user_id).first_or_404()
+    req         = request.get_json()
+    offering_id = req.get('offering_id')
+    tag         = req.get('tag')
+    off         = CourseOffering.query.get_or_404(offering_id)
+
+    # — prevent duplicate enroll/waitlist
+    if Enrollment.query.filter_by(student_id=student.student_id, offering_id=offering_id).first() \
+    or Waitlist.query.filter_by(student_id=student.student_id, offering_id=offering_id).first():
+        return jsonify({'error': 'Already enrolled or waitlisted'}), 400
+
+    if off.current_seats < off.max_seats:
+        # enroll immediately
+        e = Enrollment(
+          student_id = student.student_id,
+          offering_id= offering_id,
+          status     = 'enrolled',
+          tag        = tag
+        )
+        off.current_seats += 1
+        db.session.add(e)
+        db.session.commit()
+        return jsonify({'status': 'registered'}), 200
+    else:
+        # add to waitlist
+        pos = Waitlist.query.filter_by(offering_id=offering_id).count() + 1
+        w = Waitlist(
+          student_id = student.student_id,
+          offering_id= offering_id,
+          position   = pos,
+          tag        = tag
+        )
+        db.session.add(w)
+        db.session.commit()
+        return jsonify({'status': 'waitlisted', 'position': pos}), 200
+    
+@register_courses_bp.route('/<int:offering_id>', methods=['DELETE'])
+@jwt_required()
+def drop_course(offering_id):
+    user_id = get_jwt_identity()
+    student = Student.query.filter_by(user_id=user_id).first_or_404()
+    sid     = student.student_id
+    off     = CourseOffering.query.get_or_404(offering_id)
+
+    # 1) If enrolled → remove and free a seat, promote waitlist head
+    e = Enrollment.query.filter_by(student_id=sid, offering_id=offering_id).first()
+    if e:
+        db.session.delete(e)
+        off.current_seats -= 1
+
+        # promote
+        head = Waitlist.query.filter_by(offering_id=offering_id).order_by(Waitlist.position).first()
+        if head:
+            # create enrollment for them
+            new_e = Enrollment(
+              student_id = head.student_id,
+              offering_id= offering_id,
+              status     = 'enrolled',
+              tag        = head.tag
+            )
+            off.current_seats += 1
+            db.session.add(new_e)
+            # remove from waitlist
+            db.session.delete(head)
+
+            # shift everyone up
+            rest = Waitlist.query.filter(
+              Waitlist.offering_id==offering_id,
+              Waitlist.position> head.position
+            ).all()
+            for w in rest: w.position -= 1
+
+        db.session.commit()
+        return '', 204
+
+    # 2) Else if waitlisted → remove and re-index
+    w = Waitlist.query.filter_by(student_id=sid, offering_id=offering_id).first()
+    if w:
+        pos = w.position
+        db.session.delete(w)
+        rest = Waitlist.query.filter(
+          Waitlist.offering_id==offering_id,
+          Waitlist.position> pos
+        ).all()
+        for r in rest: r.position -= 1
+        db.session.commit()
+        return '', 204
+
+    return jsonify({'error': 'Not enrolled or waitlisted'}), 404
+
+@register_courses_bp.route('/<int:offering_id>', methods=['PUT'])
+@jwt_required()
+def change_tag(offering_id):
+    """
+    Dropping & re-registering under a new tag:
+    1) run the same drop logic above
+    2) then call register_course() logic with new tag
+    """
+    user_id = get_jwt_identity()
+    student = Student.query.filter_by(user_id=user_id).first_or_404()
+    data    = request.get_json()
+    new_tag = data.get('new_tag')
+    if not new_tag:
+        return jsonify({'error': 'new_tag is required'}), 400
+
+    # reuse drop logic (inline or refactor into helper)
+    # … copy/paste the enrolled-vs-waitlist removal above …
+
+    # then reuse the register logic:
+    # if seat free → Enrollment(…, tag=new_tag)
+    # else Waitlist(…, tag=new_tag)
+    # commit & return new status/position
+
+@register_courses_bp.route('/search', methods=['GET'])
+@jwt_required()
+def search_courses():
+    print("Searching for courses")
+    q = request.args.get('query', '').strip()
+    if not q:
+        return jsonify([]), 200
+    print("Query:", q)
+
+    # find up to 10 matching courses by code or name prefix
+    courses = (Course.query
+               .filter(
+                 or_(
+                   Course.course_id.ilike(f'{q}%'),
+                   Course.name.ilike(f'{q}%')
+                 )
+               )
+               .limit(10)
+               .all())
+    print("Courses found:", len(courses))
+    suggestions = []
+    for c in courses:
+        off = c.offerings.filter_by(semester_id=get_current_semester_id()).first()
+        if not off:
+            # this course simply isn’t offered right now
+            continue
+
+        suggestions.append({
+            'offering_id':   off.offering_id,
+            'course_id':     c.course_id,
+            'course_name':   c.name,
+            'credits':       c.credits
+        })
+
+    return jsonify(suggestions), 200
+
+
+
+
+
+

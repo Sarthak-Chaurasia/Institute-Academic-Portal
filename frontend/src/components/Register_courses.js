@@ -1,165 +1,251 @@
 import React, { useState, useEffect } from "react";
-import api from '../api';
+import api from "../api";
 
 function RegisterCourses() {
-  const [courseCode, setCourseCode] = useState("");
-  const [courseInfo, setCourseInfo] = useState(null);
-  const [error, setError] = useState("");
+  // For autocomplete search input
+  const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
 
+  // Once a course is selected, we store its full info
+  const [courseInfo, setCourseInfo] = useState(null);
   const [tags, setTags] = useState([]);
   const [selectedTag, setSelectedTag] = useState("");
+  const [error, setError] = useState("");
 
-  const [eligibility, setEligibility] = useState({ allowed: false, reason: "" });
+  // Current registrations / waitlist statuses
+  const [currentRegs, setCurrentRegs] = useState([]);
 
-  const [regCart, setRegCart] = useState([]);
-
-  // Fetch and reset tags & eligibility whenever a course is loaded
+  // 1) On mount, fetch current status
   useEffect(() => {
-    if (!courseInfo) {
-      setTags([]);
-      setEligibility({ allowed: false, reason: "" });
+    fetchStatus();
+  }, []);
+
+  const fetchStatus = async () => {
+    try {
+      const { data } = await api.get("/register_courses/status");
+      setCurrentRegs(data);
+    } catch (e) {
+      console.error("Failed to load current registrations:", e);
+      setError("Could not fetch your registration status.");
+    }
+  };
+
+  // 2) Autocomplete suggestions as user types
+  useEffect(() => {
+    if (query.length < 1) {
+      setSuggestions([]);
       return;
     }
-  }, [courseInfo]);
+    const timer = setTimeout(async () => {
+      try {
+        const { data } = await api.get(
+          `/register_courses/search?query=${encodeURIComponent(query)}`
+        );
+        setSuggestions(data);
+      } catch (e) {
+        console.error("Search error:", e);
+      }
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [query]);
 
-  const handleSearch = async () => {
+  // 3) When selecting a suggestion, load full details + tags
+  const chooseSuggestion = async (course) => {
+    setCourseInfo(course);
+    setQuery("");
+    setSuggestions([]);
+    setError("");
+
     try {
-      const response = await api.get(`/register_courses/get_course/${courseCode}`);
-      setCourseInfo(response.data);
+      const res = await api.get(
+        `/register_courses/get_course/${course.course_id}`
+      );
+      setCourseInfo(res.data);
+    } catch {
+      setError("Could not load course details.");
+      setCourseInfo(null);
+      return;
+    }
+
+    try {
+      const { data } = await api.get(`/register_courses/tags/${course.course_id}`);
+      setTags(data.tags);
       setSelectedTag("");
-      setError("");
-    } catch (err) {
+    } catch {
+      setError("Could not load tags for this course.");
+      setTags([]);
+    }
+  };
+
+  // 4) Register this offering with chosen tag
+  const handleRegister = async () => {
+    if (!courseInfo || !selectedTag) return;
+    try {
+      await api.post("/register_courses/register", {
+        offering_id: courseInfo.offering_id,
+        tag: selectedTag,
+      });
       setCourseInfo(null);
       setTags([]);
-      setError("Course not found or error fetching data.");
-    }
-  
-    try {
-      const response = await api.get(`/register_courses/tags/${courseCode}`);
-  
-      console.log("tags", response.data);
-      setTags(response.data.tags);
       setSelectedTag("");
-      setError("");
-    }
-    catch (err) {
-      console.error("Error fetching tags:", err.response?.data || err.message);
-      setTags([]);
-      setError("Tags not found or error fetching data.");
+      fetchStatus();
+    } catch (e) {
+      console.error("Register error:", e.response?.data || e);
+      setError(
+        `Registration failed: ${e.response?.data?.error || e.message}`
+      );
     }
   };
-  
 
-  const handleAddToCart = () => {
-    if (!eligibility.allowed) {
-      alert(`Cannot add: ${eligibility.reason}`);
-      return;
+  // 5) Drop a course/waitlist
+  const handleDrop = async (offering_id) => {
+    if (!window.confirm("Are you sure you want to drop this course?")) return;
+    try {
+      await api.delete(`/register_courses/${offering_id}`);
+      fetchStatus();
+    } catch (e) {
+      console.error("Drop error:", e);
+      setError("Could not drop the course.");
     }
-
-    const entry = {
-      ...courseInfo,
-      tag: selectedTag
-    };
-
-    setRegCart(prev => [...prev, entry]);
-    // Clear current selection
-    setCourseInfo(null);
-    setCourseCode("");
   };
 
-  const totalCredits = regCart.reduce((sum, c) => sum + (c.credits || 0), 0);
+  // 6) Change tag for an existing registration
+  const handleChangeTag = async (offering_id) => {
+    const newTag = window.prompt("Enter new tag:");
+    if (!newTag) return;
+    try {
+      await api.put(`/register_courses/${offering_id}`, { new_tag: newTag });
+      fetchStatus();
+    } catch (e) {
+      console.error("Change tag error:", e);
+      setError("Could not change tag.");
+    }
+  };
 
   return (
-    <div className="p-6 max-w-lg mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Register Course Offering</h2>
+    <div className="p-6 max-w-3xl mx-auto">
+      <h2 className="text-2xl font-bold mb-4">Your Registered Courses</h2>
 
-      <div className="mb-4">
-        <label className="block text-sm font-medium">Course Code:</label>
+      {/* Status table */}
+      <table className="w-full mb-8 border-collapse">
+        <thead>
+          <tr className="bg-gray-200">
+            {[
+              "Course",
+              "Credits",
+              "Tag",
+              "Status",
+              "Waitlist Pos",
+              "Actions",
+            ].map((h) => (
+              <th key={h} className="border p-2 text-left">
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {currentRegs.map((r) => (
+            <tr key={r.offering_id}>
+              <td className="border p-2">
+                {r.course_name} ({r.course_id})
+              </td>
+              <td className="border p-2">{r.credits}</td>
+              <td className="border p-2">{r.tag}</td>
+              <td className="border p-2">
+                {r.status === "registered" ? (
+                  <span className="text-green-600">Registered</span>
+                ) : (
+                  <span className="text-orange-600">Waitlisted</span>
+                )}
+              </td>
+              <td className="border p-2">
+                {r.waitlist_pos && r.waitlist_total
+                  ? `${r.waitlist_pos}/${r.waitlist_total}`
+                  : "-"}
+              </td>
+              <td className="border p-2 space-x-2">
+                <button
+                  className="text-red-600 underline"
+                  onClick={() => handleDrop(r.offering_id)}
+                >
+                  Drop
+                </button>
+                <button
+                  className="text-blue-600 underline"
+                  onClick={() => handleChangeTag(r.offering_id)}
+                >
+                  Change Tag
+                </button>
+              </td>
+            </tr>
+          ))}
+          {currentRegs.length === 0 && (
+            <tr>
+              <td colSpan={6} className="p-4 text-center text-gray-500">
+                No registrations yet.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+
+      {/* Search & register */}
+      <div className="relative mb-6">
         <input
           type="text"
-          value={courseCode}
-          onChange={e => setCourseCode(e.target.value)}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search courses by code or name…"
           className="border p-2 w-full rounded"
-          placeholder="e.g., CS101"
         />
-        <button
-          onClick={handleSearch}
-          className="mt-2 px-4 py-2 bg-blue-500 text-white rounded"
-        >
-          Search
-        </button>
-        {error && <p className="text-red-500 mt-2">{error}</p>}
+        {suggestions.length > 0 && (
+          <ul className="absolute z-10 bg-white border w-full mt-1 max-h-48 overflow-auto">
+            {suggestions.map((c) => (
+              <li
+                key={c.course_id}
+                className="p-2 hover:bg-gray-100 cursor-pointer"
+                onClick={() => chooseSuggestion(c)}
+              >
+                {c.course_id}: {c.course_name}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
+      {/* Detail + tag select + register button */}
       {courseInfo && (
-        <div className="bg-gray-100 p-4 rounded mb-4">
-          <p><strong>Course ID:</strong> {courseInfo.course_id}</p>
-          <p><strong>Course Name:</strong> {courseInfo.course_name}</p>
-          <p><strong>Credits:</strong> {courseInfo.credits}</p>
-          <p><strong>Instructor:</strong> {courseInfo.instructor_name}</p>
-          <p><strong>Semester:</strong> {courseInfo.semester_name}</p>
-          <p><strong>Max Seats:</strong> {courseInfo.max_seats}</p>
-          <p><strong>Current Seats:</strong> {courseInfo.current_seats}</p>
-
+        <div className="bg-gray-50 p-4 rounded shadow mb-4">
+          <h3 className="font-semibold mb-2">
+            Register {courseInfo.course_name} ({courseInfo.course_id})
+          </h3>
+          <p>
+            <strong>Credits:</strong> {courseInfo.credits}
+          </p>
           <div className="mt-2">
-            <label className="block text-sm font-medium">Tag:</label>
+            <label className="block text-sm">Tag:</label>
             <select
               value={selectedTag}
-              onChange={e => setSelectedTag(e.target.value)}
+              onChange={(e) => setSelectedTag(e.target.value)}
               className="border p-2 w-full rounded"
             >
-              <option value="" disabled>Select tag</option>
-              {(tags || []).map(tag => (
-                <option key={tag} value={tag}>{tag}</option>
+              <option value="">Select tag</option>
+              {tags.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
               ))}
             </select>
           </div>
-
-          <p className={`mt-2 ${eligibility.allowed ? 'text-green-600' : 'text-red-600'}`}>
-            {eligibility.allowed ? 'You are eligible to register.' : `Not eligible: ${eligibility.reason}`}
-          </p>
-
           <button
-            onClick={handleAddToCart}
-            className="mt-4 px-4 py-2 bg-green-600 text-white rounded"
+            onClick={handleRegister}
+            disabled={!selectedTag}
+            className="mt-4 px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50"
           >
-            Add to RegCart
+            Confirm Registration
           </button>
-        </div>
-      )}
-
-      {/* Registration Cart */}
-      {regCart.length > 0 && (
-        <div className="mt-6">
-          <h3 className="text-xl font-semibold mb-2">RegCart</h3>
-          <table className="w-full border-collapse">
-            <thead>
-              <tr>
-                <th className="border p-2">Course</th>
-                <th className="border p-2">Credits</th>
-                <th className="border p-2">Semester</th>
-                <th className="border p-2">Tag</th>
-              </tr>
-            </thead>
-            <tbody>
-              {regCart.map((c, idx) => (
-                <tr key={idx}>
-                  <td className="border p-2">{c.course_name} ({c.course_id})</td>
-                  <td className="border p-2">{c.credits}</td>
-                  <td className="border p-2">{c.semester_name}</td>
-                  <td className="border p-2">{c.tag}</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td className="border p-2 font-bold">Total:</td>
-                <td className="border p-2 font-bold">{totalCredits}</td>
-                <td className="border p-2"></td>
-                <td className="border p-2"></td>
-              </tr>
-            </tfoot>
-          </table>
+          {error && <p className="text-red-500 mt-2">{error}</p>}
         </div>
       )}
     </div>
