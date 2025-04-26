@@ -243,25 +243,103 @@ def drop_course(offering_id):
 @register_courses_bp.route('/<int:offering_id>', methods=['PUT'])
 @jwt_required()
 def change_tag(offering_id):
-    """
-    Dropping & re-registering under a new tag:
-    1) run the same drop logic above
-    2) then call register_course() logic with new tag
-    """
     user_id = get_jwt_identity()
     student = Student.query.filter_by(user_id=user_id).first_or_404()
-    data    = request.get_json()
+    sid     = student.student_id
+
+    data    = request.get_json() or {}
     new_tag = data.get('new_tag')
     if not new_tag:
         return jsonify({'error': 'new_tag is required'}), 400
 
-    # reuse drop logic (inline or refactor into helper)
-    # … copy/paste the enrolled-vs-waitlist removal above …
+    off = CourseOffering.query.get_or_404(offering_id)
 
-    # then reuse the register logic:
-    # if seat free → Enrollment(…, tag=new_tag)
-    # else Waitlist(…, tag=new_tag)
-    # commit & return new status/position
+    # --- 1) Remove existing enrollment or waitlist entry ---
+    enrollment = Enrollment.query.filter_by(
+        student_id=sid,
+        offering_id=offering_id
+    ).first()
+
+    if enrollment:
+        # Drop enrollment, free a seat
+        db.session.delete(enrollment)
+        off.current_seats -= 1
+
+        # Promote the head of the waitlist, if any
+        head = Waitlist.query.filter_by(offering_id=offering_id) \
+                             .order_by(Waitlist.position) \
+                             .first()
+        if head:
+            promoted = Enrollment(
+                student_id  = head.student_id,
+                offering_id = offering_id,
+                status      = 'enrolled',
+                tag         = head.tag
+            )
+            db.session.add(promoted)
+            off.current_seats += 1
+            # Remove them from waitlist
+            original_pos = head.position
+            db.session.delete(head)
+
+            # Shift everyone else up
+            followers = Waitlist.query.filter(
+                Waitlist.offering_id == offering_id,
+                Waitlist.position      > original_pos
+            ).all()
+            for w in followers:
+                w.position -= 1
+
+    else:
+        # Maybe they were on the waitlist
+        wait = Waitlist.query.filter_by(
+            student_id=sid,
+            offering_id=offering_id
+        ).first()
+        if wait:
+            pos = wait.position
+            db.session.delete(wait)
+
+            # Re-index the rest
+            followers = Waitlist.query.filter(
+                Waitlist.offering_id == offering_id,
+                Waitlist.position      > pos
+            ).all()
+            for w in followers:
+                w.position -= 1
+        else:
+            return jsonify({'error': 'Not enrolled or waitlisted'}), 404
+
+    # --- 2) Re-register under the new tag ---
+    if off.current_seats < off.max_seats:
+        # Seat available → enroll immediately
+        new_enroll = Enrollment(
+            student_id  = sid,
+            offering_id = offering_id,
+            status      = 'enrolled',
+            tag         = new_tag
+        )
+        off.current_seats += 1
+        db.session.add(new_enroll)
+
+        db.session.commit()
+        return jsonify({'status': 'registered'}), 200
+
+    else:
+        # No seats → join the end of the waitlist
+        new_position = Waitlist.query.filter_by(offering_id=offering_id).count() + 1
+        new_wait = Waitlist(
+            student_id  = sid,
+            offering_id = offering_id,
+            position    = new_position,
+            tag         = new_tag
+        )
+        db.session.add(new_wait)
+        db.session.commit()
+        return jsonify({
+            'status':   'waitlisted',
+            'position': new_position
+        }), 200
 
 @register_courses_bp.route('/search', methods=['GET'])
 @jwt_required()

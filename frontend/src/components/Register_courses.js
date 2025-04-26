@@ -2,20 +2,19 @@ import React, { useState, useEffect } from "react";
 import api from "../api";
 
 function RegisterCourses() {
-  // For autocomplete search input
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
-
-  // Once a course is selected, we store its full info
   const [courseInfo, setCourseInfo] = useState(null);
   const [tags, setTags] = useState([]);
   const [selectedTag, setSelectedTag] = useState("");
   const [error, setError] = useState("");
-
-  // Current registrations / waitlist statuses
   const [currentRegs, setCurrentRegs] = useState([]);
 
-  // 1) On mount, fetch current status
+  // New states for changing tag
+  const [changingTagFor, setChangingTagFor] = useState(null);
+  const [allowedTags, setAllowedTags] = useState([]);
+  const [newTag, setNewTag] = useState("");
+
   useEffect(() => {
     fetchStatus();
   }, []);
@@ -30,7 +29,6 @@ function RegisterCourses() {
     }
   };
 
-  // 2) Autocomplete suggestions as user types
   useEffect(() => {
     if (query.length < 1) {
       setSuggestions([]);
@@ -49,7 +47,6 @@ function RegisterCourses() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  // 3) When selecting a suggestion, load full details + tags
   const chooseSuggestion = async (course) => {
     setCourseInfo(course);
     setQuery("");
@@ -57,9 +54,7 @@ function RegisterCourses() {
     setError("");
 
     try {
-      const res = await api.get(
-        `/register_courses/get_course/${course.course_id}`
-      );
+      const res = await api.get(`/register_courses/get_course/${course.course_id}`);
       setCourseInfo(res.data);
     } catch {
       setError("Could not load course details.");
@@ -77,7 +72,6 @@ function RegisterCourses() {
     }
   };
 
-  // 4) Register this offering with chosen tag
   const handleRegister = async () => {
     if (!courseInfo || !selectedTag) return;
     try {
@@ -91,13 +85,10 @@ function RegisterCourses() {
       fetchStatus();
     } catch (e) {
       console.error("Register error:", e.response?.data || e);
-      setError(
-        `Registration failed: ${e.response?.data?.error || e.message}`
-      );
+      setError(`Registration failed: ${e.response?.data?.error || e.message}`);
     }
   };
 
-  // 5) Drop a course/waitlist
   const handleDrop = async (offering_id) => {
     if (!window.confirm("Are you sure you want to drop this course?")) return;
     try {
@@ -109,12 +100,26 @@ function RegisterCourses() {
     }
   };
 
-  // 6) Change tag for an existing registration
-  const handleChangeTag = async (offering_id) => {
-    const newTag = window.prompt("Enter new tag:");
+  const startChangeTag = async (offering_id, course_id) => {
+    try {
+      const { data } = await api.get(`/register_courses/tags/${course_id}`);
+      setAllowedTags(data.tags);
+      setChangingTagFor(offering_id);
+      setNewTag("");
+      setError("");
+    } catch (e) {
+      console.error("Fetch tags error:", e);
+      setError("Could not load tags.");
+    }
+  };
+
+  const submitChangeTag = async (offering_id) => {
     if (!newTag) return;
     try {
       await api.put(`/register_courses/${offering_id}`, { new_tag: newTag });
+      setChangingTagFor(null);
+      setAllowedTags([]);
+      setNewTag("");
       fetchStatus();
     } catch (e) {
       console.error("Change tag error:", e);
@@ -126,30 +131,18 @@ function RegisterCourses() {
     <div className="p-6 max-w-3xl mx-auto">
       <h2 className="text-2xl font-bold mb-4">Your Registered Courses</h2>
 
-      {/* Status table */}
       <table className="w-full mb-8 border-collapse">
         <thead>
           <tr className="bg-gray-200">
-            {[
-              "Course",
-              "Credits",
-              "Tag",
-              "Status",
-              "Waitlist Pos",
-              "Actions",
-            ].map((h) => (
-              <th key={h} className="border p-2 text-left">
-                {h}
-              </th>
+            {["Course", "Credits", "Tag", "Status", "Waitlist Pos", "Actions"].map((h) => (
+              <th key={h} className="border p-2 text-left">{h}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {currentRegs.map((r) => (
             <tr key={r.offering_id}>
-              <td className="border p-2">
-                {r.course_name} ({r.course_id})
-              </td>
+              <td className="border p-2">{r.course_name} ({r.course_id})</td>
               <td className="border p-2">{r.credits}</td>
               <td className="border p-2">{r.tag}</td>
               <td className="border p-2">
@@ -160,23 +153,57 @@ function RegisterCourses() {
                 )}
               </td>
               <td className="border p-2">
-                {r.waitlist_pos && r.waitlist_total
-                  ? `${r.waitlist_pos}/${r.waitlist_total}`
-                  : "-"}
+                {r.waitlist_pos && r.waitlist_total ? `${r.waitlist_pos}/${r.waitlist_total}` : "-"}
               </td>
-              <td className="border p-2 space-x-2">
-                <button
-                  className="text-red-600 underline"
-                  onClick={() => handleDrop(r.offering_id)}
-                >
-                  Drop
-                </button>
-                <button
-                  className="text-blue-600 underline"
-                  onClick={() => handleChangeTag(r.offering_id)}
-                >
-                  Change Tag
-                </button>
+              <td className="border p-2 space-y-2">
+                {changingTagFor === r.offering_id ? (
+                  <div className="space-y-2">
+                    <select
+                      value={newTag}
+                      onChange={(e) => setNewTag(e.target.value)}
+                      className="border p-1 rounded w-full"
+                    >
+                      <option value="">Select new tag</option>
+                      {allowedTags.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                    <div className="flex gap-2">
+                      <button
+                        className="text-green-600 underline"
+                        onClick={() => submitChangeTag(r.offering_id)}
+                        disabled={!newTag}
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        className="text-gray-600 underline"
+                        onClick={() => {
+                          setChangingTagFor(null);
+                          setAllowedTags([]);
+                          setNewTag("");
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      className="text-red-600 underline"
+                      onClick={() => handleDrop(r.offering_id)}
+                    >
+                      Drop
+                    </button>
+                    <button
+                      className="text-blue-600 underline ml-2"
+                      onClick={() => startChangeTag(r.offering_id, r.course_id)}
+                    >
+                      Change Tag
+                    </button>
+                  </>
+                )}
               </td>
             </tr>
           ))}
@@ -190,7 +217,6 @@ function RegisterCourses() {
         </tbody>
       </table>
 
-      {/* Search & register */}
       <div className="relative mb-6">
         <input
           type="text"
@@ -214,15 +240,12 @@ function RegisterCourses() {
         )}
       </div>
 
-      {/* Detail + tag select + register button */}
       {courseInfo && (
         <div className="bg-gray-50 p-4 rounded shadow mb-4">
           <h3 className="font-semibold mb-2">
             Register {courseInfo.course_name} ({courseInfo.course_id})
           </h3>
-          <p>
-            <strong>Credits:</strong> {courseInfo.credits}
-          </p>
+          <p><strong>Credits:</strong> {courseInfo.credits}</p>
           <div className="mt-2">
             <label className="block text-sm">Tag:</label>
             <select
@@ -232,9 +255,7 @@ function RegisterCourses() {
             >
               <option value="">Select tag</option>
               {tags.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
+                <option key={t} value={t}>{t}</option>
               ))}
             </select>
           </div>
