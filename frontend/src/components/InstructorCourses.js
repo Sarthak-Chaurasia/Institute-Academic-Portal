@@ -28,6 +28,11 @@ const InstrcutorCourses = () => {
     }
   }, []);
 
+  const handleCourseClick = (id) => {
+    // Optional: verify the course exists or prefetch it
+    history.push(`/courses/${id}`);
+  };
+
   return (
     <div className="container">
       <div className="card">
@@ -44,7 +49,18 @@ const InstrcutorCourses = () => {
           <tbody>
             {courses.map((course, index) => (
               <tr key={index}>
-                <td style={{ border: "1px solid #ddd", padding: "8px" }}>{course.course_id}</td>
+                <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleCourseClick(course.course_id);
+                    }}
+                    style={{ color: "blue", textDecoration: "underline", cursor: "pointer" }}
+                  >
+                    {course.course_id}
+                  </a>
+                </td>
                 <td style={{ border: "1px solid #ddd", padding: "8px" }}>{course.semester_id}</td>
                 <td style={{ border: "1px solid #ddd", padding: "8px" }}>{course.max_seats}</td>
                 <td style={{ border: "1px solid #ddd", padding: "8px" }}>{course.current_seats}</td>
@@ -52,6 +68,7 @@ const InstrcutorCourses = () => {
             ))}
           </tbody>
         </table>
+
 
         <Link to="/instructor-dashboard" style={{ display: "inline-block", marginTop: "16px" }}>
           Back to Instructor Dashboard

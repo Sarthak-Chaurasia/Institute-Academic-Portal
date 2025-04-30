@@ -303,6 +303,16 @@ class Enrollment(db.Model):
         db.CheckConstraint("status IN ('enrolled', 'dropped')", name='check_status_valid'),
     )
 
+    def to_dict(self):
+        return {
+            'enrollment_id': self.enrollment_id,
+            'student_id': self.student_id,
+            'offering_id': self.offering_id,
+            'status': self.status,
+            'enrollment_date': self.enrollment_date,
+            'tag': self.tag
+        }
+
 
 class Waitlist(db.Model):
     __tablename__ = 'waitlists'
@@ -312,6 +322,16 @@ class Waitlist(db.Model):
     position    = db.Column(db.Integer, nullable=False)
     tag         = db.Column(db.String(50), nullable=False)          # ← new
     timestamp   = db.Column(db.DateTime, server_default=db.func.current_timestamp())
+
+    def to_dict(self):
+        return {
+            'waitlist_id': self.waitlist_id,
+            'student_id': self.student_id,
+            'offering_id': self.offering_id,
+            'position': self.position,
+            'tag': self.tag,  # ← new
+            'timestamp': self.timestamp
+        }
 
 
 class Grade(db.Model):

@@ -138,7 +138,7 @@ def registration_status():
           'course_name':   off.course.name,
           'credits':       off.course.credits,
           'semester_name': off.semester_id,
-          'tag':           w.tag,
+        #   'tag':           w.tag,
           'status':        'waitlisted',
           'waitlist_pos':  w.position,
           'waitlist_total':total
@@ -376,6 +376,35 @@ def search_courses():
         })
 
     return jsonify(suggestions), 200
+
+@register_courses_bp.route('/offerings', methods=['GET'])
+# @jwt_required()
+def get_offerings():
+
+    print("Fetching all course offerings")
+    # Get all course offerings for the current semester
+    current_semester = Semester.query.order_by(Semester.start_date.desc()).first()
+    offerings = CourseOffering.query.filter_by(semester_id=current_semester.semester_id).all()
+
+    # Prepare the response data
+    response_data = []
+    for offering in offerings:
+        course = Course.query.get(offering.course_id)
+        instructor = Instructor.query.get(offering.instructor_id)
+        user = User.query.get(instructor.user_id)
+
+        response_data.append({
+            'offering_id':   offering.offering_id,
+            'course_id':     course.course_id,
+            'course_name':   course.name,
+            'credits':       course.credits,
+            'semester_name': current_semester.name,
+            'instructor_name': user.username,
+            'max_seats':     offering.max_seats,
+            'current_seats': offering.current_seats
+        })
+    print("Number of offerings:", len(response_data))
+    return jsonify(response_data), 200
 
 
 

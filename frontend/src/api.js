@@ -30,6 +30,7 @@ api.interceptors.request.use(
     const accessToken = localStorage.getItem('token');
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
+      
       console.log('Sending token in header:', config.headers.Authorization);
     }
     return config;

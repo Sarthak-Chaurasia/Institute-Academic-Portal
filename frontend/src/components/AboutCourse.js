@@ -7,6 +7,7 @@ import { useHistory } from 'react-router-dom/cjs/react-router-dom.min';
 function AboutCourse() {
   const { courseId } = useParams();
   const [course, setCourse] = useState(null);
+  const [offerings, setOfferings] = useState([]);
   const [role, setRole] = useState('');
   const history = useHistory();
   let newcourseid = courseId; // Initialize newcourseid with courseId
@@ -15,8 +16,17 @@ function AboutCourse() {
     const token = localStorage.getItem('token');
     if (token) {
       const decoded = jwt_decode(token);
+      const user_id = parseInt(decoded?.sub);
       const userRole = decoded?.role;
       setRole(userRole);
+      if(userRole === 'instructor'){
+        api.get(`/courses/${courseId}`)
+          .then((res) => setOfferings(res.data))
+          .catch((err) => console.error('Error loading course', err));
+      }
+      console.log('User ID:', user_id);
+      console.log('User Role:', userRole);
+      console.log("offerings", offerings);
     }
 
     api.get(`/courses/${courseId}`)
@@ -71,7 +81,7 @@ function AboutCourse() {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmitEditCourse = (e) => {
     e.preventDefault();
     console.log("Editing Course:", formData);
     // Add your API call or form handling logic here
@@ -100,6 +110,12 @@ function AboutCourse() {
       .catch((error) => {
         console.error('Error editing course:', error);
       });
+  };
+
+  const handleWaitlistAction = (student_id,action) => {
+    api.post(`/courses/${courseId}/wl_enrl?action=${action}&student_id=${student_id}`)
+      .then((response) => {console.log('Waitlist action successful:', response.data);})
+      .catch((error) => {console.error('Error performing waitlist action:', error);});
   };
 
   if (!course) return <p>Loading...</p>;
@@ -158,7 +174,7 @@ function AboutCourse() {
           </button>
 
           {showForm && (
-            <form onSubmit={handleSubmit} style={{ marginTop: "16px", border: "1px solid #ccc", padding: "12px" }}>
+            <form onSubmit={handleSubmitEditCourse} style={{ marginTop: "16px", border: "1px solid #ccc", padding: "12px" }}>
               <h3>Edit Course Details</h3>
               <div style={{ marginBottom: "8px" }}>
                 <label>Course ID: </label>
@@ -274,8 +290,104 @@ function AboutCourse() {
         </>
       )
     }
+     {role === 'instructor' && offerings && offerings.length > 0 && (
+      <div>
+        <h3>Offerings for this Course</h3>
+        {offerings.map((offering, index) => (
+          <div key={index} className="offering-section" style={{ marginBottom: "20px", padding: "10px", border: "1px solid #ccc" }}>
+            <p><strong>Offering ID:</strong> {offering.offering_id}</p>
+            <p><strong>Semester ID:</strong> {offering.semester_id}</p>
+            <p><strong>Instructor ID:</strong> {offering.instructor_id}</p>
+            <p><strong>Max Seats:</strong> {offering.max_seats}</p>
+            <p><strong>Current Seats:</strong> {offering.current_seats}</p>
 
-      <p><Link to="/courses">Back to Courses</Link></p>
+            <h4>Enrollments</h4>
+            {offering.enrollments.length === 0 ? (
+              <p>No enrollments yet.</p>
+            ) : (
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th style={{ border: "1px solid #ddd", padding: "8px" }}>Enrollment ID</th>
+                    <th style={{ border: "1px solid #ddd", padding: "8px" }}>Student ID</th>
+                    <th style={{ border: "1px solid #ddd", padding: "8px" }}>Status</th>
+                    <th style={{ border: "1px solid #ddd", padding: "8px" }}>Date</th>
+                    <th style={{ border: "1px solid #ddd", padding: "8px" }}>Tag</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {offering.enrollments.map((enroll) => (
+                    <tr key={enroll.enrollment_id}>
+                      <td style={{ border: "1px solid #ddd", padding: "8px" }}>{enroll.enrollment_id}</td>
+                      <td style={{ border: "1px solid #ddd", padding: "8px" }}>{enroll.student_id}</td>
+                      <td style={{ border: "1px solid #ddd", padding: "8px" }}>{enroll.status}</td>
+                      <td style={{ border: "1px solid #ddd", padding: "8px" }}>{new Date(enroll.enrollment_date).toLocaleDateString()}</td>
+                      <td style={{ border: "1px solid #ddd", padding: "8px" }}>{enroll.tag}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            <h4>Waitlist</h4>
+            {offering.waitlists.length === 0 ? (
+              <p>No students on waitlist.</p>
+            ) : (
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th style={{ border: "1px solid #ddd", padding: "8px" }}>Waitlist ID</th>
+                    <th style={{ border: "1px solid #ddd", padding: "8px" }}>Student ID</th>
+                    <th style={{ border: "1px solid #ddd", padding: "8px" }}>Position</th>
+                    <th style={{ border: "1px solid #ddd", padding: "8px" }}>Tag</th>
+                    <th style={{ border: "1px solid #ddd", padding: "8px" }}>Timestamp</th>
+                    <th style={{ border: "1px solid #ddd", padding: "8px" }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {offering.waitlists.map((wait) => (
+                    <tr key={wait.waitlist_id}>
+                      <td style={{ border: "1px solid #ddd", padding: "8px" }}>{wait.waitlist_id}</td>
+                      <td style={{ border: "1px solid #ddd", padding: "8px" }}>{wait.student_id}</td>
+                      <td style={{ border: "1px solid #ddd", padding: "8px" }}>{wait.position}</td>
+                      <td style={{ border: "1px solid #ddd", padding: "8px" }}>{wait.tag}</td>
+                      <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+                        {new Date(wait.timestamp).toLocaleString()}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+                        <button
+                          onClick={() => handleWaitlistAction(wait.student_id, "accept")}
+                          style={{ marginRight: "8px" }}
+                        >
+                          Accept
+                        </button>
+                        <button
+                          onClick={() => handleWaitlistAction(wait.student_id, "decline")}
+                        >
+                          Decline
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+          </div>
+        ))}
+      </div>
+    )}
+
+
+      {role === 'student' && (
+        <div>
+          <h3>Course Registration</h3>
+          <p>To register for this course, please contact your instructor or administrator.</p>
+        </div>
+      )
+     }
+
+      <p><Link to="/instructor-dashboard">Back to Dashboard</Link></p>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import api from "../api";
 
 function RegisterCourses() {
   const [query, setQuery] = useState("");
+  const [offerings, setOfferings] = useState([]);
   const [suggestions, setSuggestions] = useState([]);
   const [courseInfo, setCourseInfo] = useState(null);
   const [tags, setTags] = useState([]);
@@ -23,29 +24,71 @@ function RegisterCourses() {
     try {
       const { data } = await api.get("/register_courses/status");
       setCurrentRegs(data);
+      api.get("/register_courses/offerings").then((res) => {
+        setOfferings(res.data);
+        setSuggestions(res.data);
+        if (res.data.length > 0) {
+          console.log("Offerings loaded:", res.data);
+        }
+      });
     } catch (e) {
       console.error("Failed to load current registrations:", e);
       setError("Could not fetch your registration status.");
     }
   };
 
-  useEffect(() => {
+  const refreshSuggestions = async (query) => {
     if (query.length < 1) {
       setSuggestions([]);
       return;
     }
-    const timer = setTimeout(async () => {
-      try {
-        const { data } = await api.get(
-          `/register_courses/search?query=${encodeURIComponent(query)}`
-        );
-        setSuggestions(data);
-      } catch (e) {
-        console.error("Search error:", e);
-      }
-    }, 200);
-    return () => clearTimeout(timer);
-  }, [query]);
+    try {
+      const lowerQuery = query.toLowerCase();
+  
+      // 1. First, get offerings where course_id starts with query
+      const prefixMatches = offerings.filter((offering) =>
+        offering.course_id.toLowerCase().startsWith(lowerQuery)
+      );
+  
+      // 2. Then, get offerings where course_id includes query (but not starting)
+      const middleMatches = offerings.filter(
+        (offering) =>
+          !offering.course_id.toLowerCase().startsWith(lowerQuery) &&
+          offering.course_id.toLowerCase().includes(lowerQuery)
+      );
+  
+      // 3. Combine them: prefix matches first, then middle matches
+      const matchedOfferings = [...prefixMatches, ...middleMatches];
+  
+      setSuggestions(matchedOfferings);
+    } catch (e) {
+      console.error("Search error:", e);
+    }
+  };
+  
+
+  // useEffect(() => {
+  //   if (query.length < 1) {
+  //     setSuggestions([]);
+  //     return;
+  //   }
+  //   const timer = setTimeout(async () => {
+  //     try {
+  //       const { data } = await api.get(
+  //         `/register_courses/search?query=${encodeURIComponent(query)}`
+  //       );
+  //       setSuggestions(data);
+  //     } catch (e) {
+  //       console.error("Search error:", e);
+  //     }
+  //   }, 200);
+  //   return () => clearTimeout(timer);
+  // }, [query]);
+
+  const HandleQuery = async (query) => {
+    setQuery(query);
+    refreshSuggestions(query);
+  };
 
   const chooseSuggestion = async (course) => {
     setCourseInfo(course);
@@ -221,7 +264,7 @@ function RegisterCourses() {
         <input
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => HandleQuery(e.target.value)}
           placeholder="Search courses by code or name…"
           className="border p-2 w-full rounded"
         />

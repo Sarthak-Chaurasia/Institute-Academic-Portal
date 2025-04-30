@@ -77,7 +77,8 @@ def login():
 @jwt_required(refresh=True)
 def refresh():
     identity = get_jwt_identity()
-    new_access = create_access_token(identity=identity)
+    role = get_jwt()["role"]
+    new_access = create_access_token(identity=identity,additional_claims={"role": role})
     return jsonify({ "access_token": new_access }), 200
 
 @jwt.token_in_blocklist_loader

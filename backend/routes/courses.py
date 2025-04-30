@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request, get_jwt
-from models import db, User, Student, Instructor, Department, Course, CourseOffering  # Import from models
+from models import db, User, Student, Instructor, Department, Course, CourseOffering, Semester, Waitlist, Enrollment # Import from models
 from routes.auth import role_required
 
 courses_bp = Blueprint('courses', __name__)
@@ -172,7 +172,7 @@ def edit_course():
             print(f"[DEBUG] Existing offering found for course_id={previous_course_code}, semester={prev_semester}")
             if semester and offering.semester_id != semester:
                 offering.semester_id = semester
-                print("[DEBUG] Semester updated.")
+                print("[DEBUG] Semester updated to" f"{offering.semester_id}.")
             if max_seats and offering.max_seats != max_seats:
                 offering.max_seats = max_seats
                 print("[DEBUG] Max seats updated.")
@@ -235,5 +235,60 @@ def get_course(course_id):
         course_dict['prerequisites'] = prerequisites
         course_dict['allowed_tags'] = allowed_tags
         return jsonify(course_dict), 200
+    elif user_role == 'instructor':
+        instructor_id = Instructor.query.filter_by(user_id=user_id).first().instructor_id
+        offerings = CourseOffering.query.filter_by(course_id=course_id, instructor_id=instructor_id).all()
+        result = []
+        for offering in offerings:
+            offering_dict = offering.to_dict()
+            offering_dict['waitlists'] = [w.to_dict() for w in offering.waitlists]
+            offering_dict['enrollments'] = [e.to_dict() for e in offering.enrollments]
+            result.append(offering_dict)
+        print(f"Found {len(result)} offerings for instructor {instructor_id}")
+        return jsonify(result), 200
     
+
     return jsonify(course.to_dict()), 200
+
+@courses_bp.route('/<course_id>/wl_enrl', methods=['POST'], strict_slashes=False)
+def wl_enrl_course(course_id):
+    verify_jwt_in_request()
+    user_id = get_jwt_identity()
+    user_role = get_jwt()['role']
+    course = Course.query.filter_by(course_id=course_id).first()
+    if not course:
+        return jsonify({"msg": "Course not found"}), 404
+    if user_role == 'instructor':
+        instructor_id = Instructor.query.filter_by(user_id=user_id).first().instructor_id
+        current_semester = Semester.query.order_by(Semester.start_date.desc()).first()
+        offering = CourseOffering.query.filter_by(course_id=course_id, instructor_id=instructor_id, semester_id=current_semester.semester_id).all()[0]
+        if not offering:
+            print(f"Found {len(offering)} offerings for instructor {instructor_id}")
+            return jsonify({"msg": "No offerings found for this course"}), 404
+        action = request.args.get('action')
+        student_id = request.args.get('student_id')
+        waitlist_entry = Waitlist.query.filter_by(offering_id=offering.offering_id, student_id=student_id).first()
+
+        if action == 'decline':
+            db.session.delete(waitlist_entry)
+            db.session.commit()
+            return jsonify({"msg": "Student has been removed from the waitlist"}), 200
+        elif action == 'accept':
+            tag = waitlist_entry.tag
+            enrollment = Enrollment(
+                student_id=student_id,
+                offering_id=offering.offering_id,
+                tag=tag,
+                status='enrolled'
+            )
+            db.session.add(enrollment)
+            db.session.delete(waitlist_entry)
+            db.session.commit()
+
+            return jsonify({"msg": "Student has been enrolled and removed from the waitlist"}), 200
+
+        else:
+            return jsonify({"msg": "Invalid action"}), 400
+    else:
+        return jsonify({"msg": "You are not authorized to perform this action"}), 403
+            
