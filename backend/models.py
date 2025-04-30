@@ -50,6 +50,12 @@ class Department(db.Model):
     instructors = db.relationship('Instructor', backref='department', lazy='dynamic', cascade="all, delete-orphan")
     students = db.relationship('Student', backref='department', lazy='dynamic', cascade="all, delete-orphan")
 
+    def to_dict(self):
+        return {
+            'department_id': self.department_id,
+            'name': self.name
+        }
+
 
 class Student(db.Model):
     __tablename__ = 'students'
