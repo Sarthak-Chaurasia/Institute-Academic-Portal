@@ -5,14 +5,27 @@ from routes.auth import role_required
 
 courses_bp = Blueprint('courses', __name__)
 
+@courses_bp.route('/departments', methods=['GET'])
+@jwt_required()
+def get_departments():
+    departments = Department.query.all()
+    return jsonify([{'id': dept.department_id, 'name': dept.name} for dept in departments]), 200
+
 @courses_bp.route('', methods=['GET'],strict_slashes=False)
 def get_courses():
-    print("Hitting /courses")
     courses = Course.query.all()
     if not courses:
         return jsonify({"msg": "No courses found"}), 404
     else :
         print(f"Found {len(courses)} courses")
+    return jsonify([course.to_dict() for course in courses]), 200
+
+@courses_bp.route('/department/<department_id>', methods=['GET'])
+@jwt_required()
+def get_courses_by_department(department_id):
+    courses = Course.query.filter_by(department_id=department_id).all()
+    if not courses:
+        return jsonify({"msg": f"No courses found for department {department_id}"}), 404
     return jsonify([course.to_dict() for course in courses]), 200
 
 
