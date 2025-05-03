@@ -161,7 +161,7 @@ function Courses() {
     <div className="container" style={{ padding:'20px', maxWidth:'800px', margin:'0 auto' }}>
       <div className="card" style={{ border:'1px solid #ddd', padding:'20px', borderRadius:'8px' }}>
         <h1 style={{ textAlign:'center', marginBottom:'20px' }}>
-          {showDepartments ? 'Select a Department' : `Courses in ${selectedDepartment}`}
+          {showDepartments ? 'Select a Department' : `Courses`}
         </h1>
 
         {/* Search bar & search-type dropdown */}
@@ -193,6 +193,26 @@ function Courses() {
               {showFilter ? 'Hide Filters' : 'Show Filters'}
             </button>
           )}
+          {!showDepartments && (
+  <button
+    onClick={() => {
+      setSelectedDepartment(null);
+      setShowDepartments(true);
+      setInputQuery('');
+      setSearchType('id');
+    }}
+    style={{
+      padding: '8px 16px',
+      marginLeft: '10px',
+      borderRadius: '4px',
+      backgroundColor: '#6c757d',
+      color: 'white',
+      border: 'none'
+    }}
+  >
+    Back to Departments
+  </button>
+)}
         </div>
 
         {/* Filters panel only in course view */}
