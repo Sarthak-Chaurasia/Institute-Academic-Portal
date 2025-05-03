@@ -194,25 +194,25 @@ function Courses() {
             </button>
           )}
           {!showDepartments && (
-  <button
-    onClick={() => {
-      setSelectedDepartment(null);
-      setShowDepartments(true);
-      setInputQuery('');
-      setSearchType('id');
-    }}
-    style={{
-      padding: '8px 16px',
-      marginLeft: '10px',
-      borderRadius: '4px',
-      backgroundColor: '#6c757d',
-      color: 'white',
-      border: 'none'
-    }}
-  >
-    Back to Departments
-  </button>
-)}
+            <button
+              onClick={() => {
+                setSelectedDepartment(null);
+                setShowDepartments(true);
+                setInputQuery('');
+                setSearchType('id');
+              }}
+              style={{
+                padding: '8px 16px',
+                marginLeft: '10px',
+                borderRadius: '4px',
+                backgroundColor: '#6c757d',
+                color: 'white',
+                border: 'none'
+              }}
+            >
+              Back to Departments
+            </button>
+          )}
         </div>
 
         {/* Filters panel only in course view */}

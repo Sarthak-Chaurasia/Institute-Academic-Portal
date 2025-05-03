@@ -10,7 +10,7 @@ register_bp = Blueprint('register', __name__)
 @register_bp.route('/personal-details', methods=['GET'])
 # @jwt_required()
 def get_personal_details():
-    print("HEADERS:", dict(request.headers))
+    # print("HEADERS:", dict(request.headers))
     verify_jwt_in_request()
     user_id = get_jwt_identity()
     user_role = get_jwt()['role']
@@ -53,15 +53,15 @@ def get_personal_details():
 @register_bp.route('', methods=['POST'])
 @jwt_required()
 def register():
-    print("Headers received:", dict(request.headers)) 
+    # print("Headers received:", dict(request.headers)) 
     try:
         """Register a new user."""
         data = request.get_json()
-        print("Data received: ", data)
+        # print("Data received: ", data)
         verify_jwt_in_request()
         user_id = get_jwt_identity()
         user_role = get_jwt()['role']
-        print("Current user: ", user_id, "Role: ", user_role)
+        # print("Current user: ", user_id, "Role: ", user_role)
         
         if not data or 'program' not in data or 'department' not in data or 'year_of_admission' not in data:
             return jsonify({"msg": "Missing required fields"}), 400

@@ -102,27 +102,27 @@ def add_course():
 def edit_course():
     try:
         data = request.get_json()
-        print("[DEBUG] Received data:", data)
+        # print("[DEBUG] Received data:", data)
 
         verify_jwt_in_request()
         user_id = get_jwt_identity()
         user_role = get_jwt()['role']
-        print(f"[DEBUG] JWT verified. User ID: {user_id}, Role: {user_role}")
+        # print(f"[DEBUG] JWT verified. User ID: {user_id}, Role: {user_role}")
 
         if user_role != 'admin':
-            print("[DEBUG] Unauthorized access attempt.")
+            # print("[DEBUG] Unauthorized access attempt.")
             return jsonify({"msg": "Unauthorized"}), 403
 
         previous_course_code = data.get('prev_course_id') or None
         course_code = data.get('course_id') or None
-        print(f"[DEBUG] Previous Course Code: {previous_course_code}, New Course Code: {course_code}")
+        # print(f"[DEBUG] Previous Course Code: {previous_course_code}, New Course Code: {course_code}")
 
         existing_course = Course.query.filter_by(course_id=previous_course_code).first()
         if not existing_course:
-            print("[DEBUG] Course does not exist.")
+            # print("[DEBUG] Course does not exist.")
             return jsonify({"msg": "Course does not exist"}), 400
 
-        print("[DEBUG] Fetched existing course successfully.")
+        # print("[DEBUG] Fetched existing course successfully.")
 
         course_name = data.get('name') or None
         prev_semester = data.get('prev_semester') or None
@@ -136,44 +136,44 @@ def edit_course():
         instructor_id = data.get('instructor_id') or None
         department_id = data.get('department_id') or None
 
-        print(f"[DEBUG] Input Instructor ID: {instructor_id}, Department ID: {department_id}")
+        # print(f"[DEBUG] Input Instructor ID: {instructor_id}, Department ID: {department_id}")
 
         if not department_id and instructor_id:
             instructor = Instructor.query.filter_by(instructor_id=instructor_id).first()
             if instructor:
                 department_id = instructor.department_id
-                print(f"[DEBUG] Retrieved Department ID from Instructor: {department_id}")
+                # print(f"[DEBUG] Retrieved Department ID from Instructor: {department_id}")
             else:
-                print("[DEBUG] Instructor not found, department ID could not be set.")
+                # print("[DEBUG] Instructor not found, department ID could not be set.")
         else:
             department_id = None
-            print("[DEBUG] Department ID explicitly set to None.")
+            # print("[DEBUG] Department ID explicitly set to None.")
 
         if course_code:
             if Course.query.filter_by(course_id=course_code).first():
-                print("[DEBUG] Course code already exists.")
+                # print("[DEBUG] Course code already exists.")
                 return jsonify({"msg": "Course code already exists"}), 400
             existing_course.course_id = course_code
-            print("[DEBUG] Course code updated.")
+            # print("[DEBUG] Course code updated.")
 
         if course_name:
             if Course.query.filter_by(name=course_name).first():
-                print("[DEBUG] Course name already exists.")
+                # print("[DEBUG] Course name already exists.")
                 return jsonify({"msg": "Course name already exists"}), 400
             existing_course.name = course_name
-            print("[DEBUG] Course name updated.")
+            # print("[DEBUG] Course name updated.")
 
         if description:
             existing_course.description = description
-            print("[DEBUG] Description updated.")
+            # print("[DEBUG] Description updated.")
 
         if credits:
             existing_course.credits = credits
-            print("[DEBUG] Credits updated.")
+            # print("[DEBUG] Credits updated.")
 
         if department_id:
             existing_course.department_id = department_id
-            print("[DEBUG] Department ID updated.")
+            # print("[DEBUG] Department ID updated.")
 
         offering = None
         if prev_semester and course_code:
@@ -182,16 +182,16 @@ def edit_course():
             offering = CourseOffering.query.filter_by(course_id=previous_course_code, semester_id=prev_semester).first()
 
         if offering:
-            print(f"[DEBUG] Existing offering found for course_id={previous_course_code}, semester={prev_semester}")
+            # print(f"[DEBUG] Existing offering found for course_id={previous_course_code}, semester={prev_semester}")
             if semester and offering.semester_id != semester:
                 offering.semester_id = semester
-                print("[DEBUG] Semester updated to" f"{offering.semester_id}.")
+                # print("[DEBUG] Semester updated to" f"{offering.semester_id}.")
             if max_seats and offering.max_seats != max_seats:
                 offering.max_seats = max_seats
-                print("[DEBUG] Max seats updated.")
+                # print("[DEBUG] Max seats updated.")
             if instructor_id and offering.instructor_id != instructor_id:
                 offering.instructor_id = instructor_id
-                print("[DEBUG] Instructor ID updated.")
+                # print("[DEBUG] Instructor ID updated.")
         else:
             if semester and max_seats and instructor_id:
                 new_offering = CourseOffering(
@@ -202,23 +202,23 @@ def edit_course():
                     instructor_id=instructor_id
                 )
                 db.session.add(new_offering)
-                print(f"[DEBUG] New CourseOffering created for course_id={previous_course_code}, semester={semester}")
+                # print(f"[DEBUG] New CourseOffering created for course_id={previous_course_code}, semester={semester}")
             elif not semester and not instructor_id and not max_seats:
-                print("[DEBUG] NO update for offering filed")
+                # print("[DEBUG] NO update for offering filed")
             else:
-                print("[DEBUG] Missing semester/instructor/max_seats fields for new offering.")
+                # print("[DEBUG] Missing semester/instructor/max_seats fields for new offering.")
                 return jsonify({"msg": "Missing semester fields required for course"}), 400
 
         if prerequisites:
             existing_course.edit_prereqs_recursive(prerequisites)
-            print("[DEBUG] Prerequisites updated.")
+            # print("[DEBUG] Prerequisites updated.")
 
         if tags:
             existing_course.edit_tags(tags)
-            print("[DEBUG] Tags updated.")
+            # print("[DEBUG] Tags updated.")
 
         db.session.commit()
-        print("[DEBUG] DB commit successful.")
+        # print("[DEBUG] DB commit successful.")
         return jsonify(existing_course.to_dict()), 200
 
     except Exception as e:
@@ -258,7 +258,7 @@ def get_course(course_id):
             offering_dict['waitlists'] = [w.to_dict() for w in offering.waitlists]
             offering_dict['enrollments'] = [e.to_dict() for e in offering.enrollments]
             result.append(offering_dict)
-        print(f"Found {len(result)} offerings for instructor {instructor_id}")
+        # print(f"Found {len(result)} offerings for instructor {instructor_id}")
         return jsonify(result), 200
     
 
@@ -277,7 +277,7 @@ def wl_enrl_course(course_id):
         current_semester = Semester.query.order_by(Semester.start_date.desc()).first()
         offering = CourseOffering.query.filter_by(course_id=course_id, instructor_id=instructor_id, semester_id=current_semester.semester_id).all()[0]
         if not offering:
-            print(f"Found {len(offering)} offerings for instructor {instructor_id}")
+            # print(f"Found {len(offering)} offerings for instructor {instructor_id}")
             return jsonify({"msg": "No offerings found for this course"}), 404
         action = request.args.get('action')
         student_id = request.args.get('student_id')

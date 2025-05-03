@@ -20,20 +20,20 @@ register_courses_bp = Blueprint('register_courses', __name__)
 @register_courses_bp.route('/get_course/<course_code>', methods=['GET'])
 @jwt_required()
 def get_course_offerings(course_code):
-    print("Fetching course offerings for course code:", course_code)
+    # print("Fetching course offerings for course code:", course_code)
     course = Course.query.filter_by(course_id=course_code).first()
     if not course:
         return jsonify({'error': 'Course not found'}), 404
-    print("course 1:", course_code)
+    # print("course 1:", course_code)
     offering = CourseOffering.query.filter_by(course_id=course.course_id).first()
     if not offering:
         return jsonify({'error': 'No offerings found for this course'}), 404
-    print("course 2:", course_code)
+    # print("course 2:", course_code)
     instr = Instructor.query.get(offering.instructor_id)
     user = User.query.get(instr.user_id)
     sem = Semester.query.get(offering.semester_id)
-    print("course details")
-    print(course.course_id, course.name, course.credits)
+    # print("course details")
+    # print(course.course_id, course.name, course.credits)
     return jsonify({
         'course_id':   course.course_id,
         'course_name': course.name,
@@ -86,13 +86,13 @@ def check_eligibility(course_id):
 @register_courses_bp.route('/tags/<course_id>', methods=['GET'])
 @jwt_required()
 def get_tags(course_id):
-    print("Fetching tags for course ID:", course_id)
+    # print("Fetching tags for course ID:", course_id)
     user_id = get_jwt_identity()
     student = Student.query.filter_by(user_id=user_id).first()
-    print("1Fetching tags for course ID:", course_id, user_id, student)
+    # print("1Fetching tags for course ID:", course_id, user_id, student)
     if not student:
         return jsonify({'error': 'Student not found'}), 404
-    print("2Fetching tags for course ID:", course_id)
+    # print("2Fetching tags for course ID:", course_id)
     student_id = student.student_id
     student_dept = student.department_id
     allowed_tags = db.session.query(Tag).join(AllowedTag, AllowedTag.tag_id == Tag.tag_id).filter(
@@ -101,7 +101,7 @@ def get_tags(course_id):
             AllowedTag.department_id == student_dept,
         )
     ).all()
-    print("3Fetching tags for course ID:", course_id)
+    # print("3Fetching tags for course ID:", course_id)
     tags = [taggo.name for taggo in allowed_tags]
     return jsonify({'tags': tags}), 200
 
@@ -344,11 +344,11 @@ def change_tag(offering_id):
 @register_courses_bp.route('/search', methods=['GET'])
 @jwt_required()
 def search_courses():
-    print("Searching for courses")
+    # print("Searching for courses")
     q = request.args.get('query', '').strip()
     if not q:
         return jsonify([]), 200
-    print("Query:", q)
+    # print("Query:", q)
 
     # find up to 10 matching courses by code or name prefix
     courses = (Course.query
@@ -360,7 +360,7 @@ def search_courses():
                )
                .limit(10)
                .all())
-    print("Courses found:", len(courses))
+    # print("Courses found:", len(courses))
     suggestions = []
     for c in courses:
         off = c.offerings.filter_by(semester_id=get_current_semester_id()).first()
@@ -381,7 +381,7 @@ def search_courses():
 # @jwt_required()
 def get_offerings():
 
-    print("Fetching all course offerings")
+    # print("Fetching all course offerings")
     # Get all course offerings for the current semester
     current_semester = Semester.query.order_by(Semester.start_date.desc()).first()
     offerings = CourseOffering.query.filter_by(semester_id=current_semester.semester_id).all()
@@ -403,7 +403,7 @@ def get_offerings():
             'max_seats':     offering.max_seats,
             'current_seats': offering.current_seats
         })
-    print("Number of offerings:", len(response_data))
+    # print("Number of offerings:", len(response_data))
     return jsonify(response_data), 200
 
 
