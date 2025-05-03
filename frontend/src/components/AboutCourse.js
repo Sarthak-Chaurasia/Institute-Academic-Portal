@@ -20,7 +20,7 @@ function AboutCourse() {
       const userRole = decoded?.role;
       setRole(userRole);
       if(userRole === 'instructor'){
-        api.get(`/courses/${courseId}`)
+        api.get(`/courses/${courseId}?need_offerings=true`)
           .then((res) => setOfferings(res.data))
           .catch((err) => console.error('Error loading course', err));
       }
@@ -32,7 +32,7 @@ function AboutCourse() {
     api.get(`/courses/${courseId}`)
       .then((res) => setCourse(res.data))
       .catch((err) => console.error('Error loading course', err));
-  }, [courseId]);
+  }, []);
 
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -118,6 +118,37 @@ function AboutCourse() {
       .catch((error) => {console.error('Error performing waitlist action:', error);});
   };
 
+  //empty handle functions for buttons
+  const handleGrade = () => {
+    console.log("Grade button clicked"); 
+    // Add your logic here
+  };
+  const handleEditPrerequisites = () => {
+    console.log("Edit Prerequisites button clicked");
+    // Add your logic here
+  };
+  const handleClearWaitlist = () => {
+    console.log("Clear Waitlist button clicked");
+    // Add your logic here
+  };
+  const handleMoodleAnnouncement = () => {
+    console.log("Moodle Announcement button clicked");
+    // Add your logic here
+  };
+  const handleTasksAndDeadline = () => {
+    console.log("Tasks and Deadline button clicked");
+    // Add your logic here
+  };
+  const handleEnrollmentAction = (enrollment_id, action) => {
+    api.post(`/courses/${courseId}/enrollment?action=${action}&enrollment_id=${enrollment_id}`)
+      .then((response) => {
+        console.log('Enrollment action successful:', response.data);
+      })
+      .catch((error) => {
+        console.error('Error performing enrollment action:', error);
+      });
+  };
+
   if (!course) return <p>Loading...</p>;
 
   return (
@@ -127,6 +158,36 @@ function AboutCourse() {
       <p><strong>Description:</strong> {course.description}</p>
       <p><strong>Credits:</strong> {course.credits}</p>
       <p><strong>Department:</strong> {course.department_id}</p>
+      <button
+        style={{ backgroundColor: "blue", color: "white", padding: "10px 20px", margin: "5px", border: "none", cursor: "pointer" }}
+        onClick={handleGrade}
+      >
+        Grade
+      </button>
+      <button
+        style={{ backgroundColor: "green", color: "white", padding: "10px 20px", margin: "5px", border: "none", cursor: "pointer" }}
+        onClick={handleEditPrerequisites}
+      >
+        Edit Prerequisites
+      </button>
+      <button
+        style={{ backgroundColor: "red", color: "white", padding: "10px 20px", margin: "5px", border: "none", cursor: "pointer" }}
+        onClick={handleClearWaitlist}
+      >
+        Clear Waitlist
+      </button>
+      <button
+        style={{ backgroundColor: "purple", color: "white", padding: "10px 20px", margin: "5px", border: "none", cursor: "pointer" }}
+        onClick={handleMoodleAnnouncement}
+      >
+        Moodle Announcement
+      </button>
+      <button
+        style={{ backgroundColor: "orange", color: "white", padding: "10px 20px", margin: "5px", border: "none", cursor: "pointer" }}
+        onClick={handleTasksAndDeadline}
+      >
+        Tasks and Deadline
+      </button>
 
       {role === 'admin' && (
         <>
@@ -302,32 +363,57 @@ function AboutCourse() {
             <p><strong>Current Seats:</strong> {offering.current_seats}</p>
 
             <h4>Enrollments</h4>
-            {offering.enrollments.length === 0 ? (
-              <p>No enrollments yet.</p>
-            ) : (
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr>
-                    <th style={{ border: "1px solid #ddd", padding: "8px" }}>Enrollment ID</th>
-                    <th style={{ border: "1px solid #ddd", padding: "8px" }}>Student ID</th>
-                    <th style={{ border: "1px solid #ddd", padding: "8px" }}>Status</th>
-                    <th style={{ border: "1px solid #ddd", padding: "8px" }}>Date</th>
-                    <th style={{ border: "1px solid #ddd", padding: "8px" }}>Tag</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {offering.enrollments.map((enroll) => (
-                    <tr key={enroll.enrollment_id}>
-                      <td style={{ border: "1px solid #ddd", padding: "8px" }}>{enroll.enrollment_id}</td>
-                      <td style={{ border: "1px solid #ddd", padding: "8px" }}>{enroll.student_id}</td>
-                      <td style={{ border: "1px solid #ddd", padding: "8px" }}>{enroll.status}</td>
-                      <td style={{ border: "1px solid #ddd", padding: "8px" }}>{new Date(enroll.enrollment_date).toLocaleDateString()}</td>
-                      <td style={{ border: "1px solid #ddd", padding: "8px" }}>{enroll.tag}</td>
+              {offering.enrollments.length === 0 ? (
+                <p>No enrollments yet.</p>
+              ) : (
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr>
+                      <th style={{ border: "1px solid #ddd", padding: "8px" }}>Enrollment ID</th>
+                      <th style={{ border: "1px solid #ddd", padding: "8px" }}>Student ID</th>
+                      <th style={{ border: "1px solid #ddd", padding: "8px" }}>Status</th>
+                      <th style={{ border: "1px solid #ddd", padding: "8px" }}>Date</th>
+                      <th style={{ border: "1px solid #ddd", padding: "8px" }}>Tag</th>
+                      <th style={{ border: "1px solid #ddd", padding: "8px" }}>Actions</th> {/* New column for action buttons */}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+                  </thead>
+                  <tbody>
+                    {offering.enrollments.map((enroll) => (
+                      <tr key={enroll.enrollment_id}>
+                        <td style={{ border: "1px solid #ddd", padding: "8px" }}>{enroll.enrollment_id}</td>
+                        <td style={{ border: "1px solid #ddd", padding: "8px" }}>{enroll.student_id}</td>
+                        <td style={{ border: "1px solid #ddd", padding: "8px" }}>{enroll.status}</td>
+                        <td style={{ border: "1px solid #ddd", padding: "8px" }}>{new Date(enroll.enrollment_date).toLocaleDateString()}</td>
+                        <td style={{ border: "1px solid #ddd", padding: "8px" }}>{enroll.tag}</td>
+
+                        {/* Action Buttons */}
+                        <td style={{ border: "1px solid #ddd", padding: "8px", textAlign: "center" }}>
+                          <button 
+                            style={{ backgroundColor: "red", color: "white", padding: "5px 10px", border: "none", cursor: "pointer" }} 
+                            onClick={() => handleEnrollmentAction(enroll.enrollment_id)}
+                          >
+                            DAC
+                          </button>
+                          <button 
+                            style={{ backgroundColor: "orange", color: "white", padding: "5px 10px", border: "none", cursor: "pointer", marginLeft: "5px" }} 
+                            onClick={() => handleEnrollmentAction(enroll.enrollment_id)}
+                          >
+                            Kick
+                          </button>
+                          <button 
+                            style={{ backgroundColor: "green", color: "white", padding: "5px 10px", border: "none", cursor: "pointer", marginLeft: "5px" }} 
+                            onClick={() => handleEnrollmentAction(enroll.enrollment_id)}
+                          >
+                            Marks
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+
+
 
             <h4>Waitlist</h4>
             {offering.waitlists.length === 0 ? (

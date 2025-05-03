@@ -218,6 +218,7 @@ def get_course(course_id):
     user_id = get_jwt_identity()
     user_role = get_jwt()['role']
     course = Course.query.filter_by(course_id=course_id).first()
+    need_offerings = request.args.get('need_offerings', 'false').lower() == 'true'
     if not course:
         return jsonify({"msg": "Course not found"}), 404
     if user_role == 'admin':
@@ -235,7 +236,7 @@ def get_course(course_id):
         course_dict['prerequisites'] = prerequisites
         course_dict['allowed_tags'] = allowed_tags
         return jsonify(course_dict), 200
-    elif user_role == 'instructor':
+    elif user_role == 'instructor' and need_offerings:
         instructor_id = Instructor.query.filter_by(user_id=user_id).first().instructor_id
         offerings = CourseOffering.query.filter_by(course_id=course_id, instructor_id=instructor_id).all()
         result = []

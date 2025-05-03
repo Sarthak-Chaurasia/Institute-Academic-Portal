@@ -38,7 +38,7 @@ const Signup = () => {
       try {
         const decoded = jwt_decode(access_token);
         const role = decoded?.role;
-        if (role == 'admin') {
+        if (role === 'admin') {
           history.push('/dashboard');
         }
         console.log("Decoded JWT:", decoded);

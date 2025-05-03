@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-import api from '../api'; // Import the API instance
-import { useHistory } from 'react-router-dom';
+// import api from '../api'; // Import the API instance
+// import { useHistory } from 'react-router-dom';
 
 function handleLogout() {
   localStorage.removeItem('token');

@@ -54,7 +54,7 @@ const Registration = () => {
     }
   };
 
-  if (userRole == 'student') {
+  if (userRole === 'student') {
     return (
       <div className="container">
         <div className="card">
@@ -122,7 +122,7 @@ const Registration = () => {
         </div>
       </div>
     );
-  } else if (userRole == 'instructor') {
+  } else if (userRole === 'instructor') {
     return (
       <div className="container">
         <div className="card">
