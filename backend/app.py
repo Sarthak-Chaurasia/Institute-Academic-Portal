@@ -36,6 +36,12 @@ def create_app():
     app.config['JWT_SECRET_KEY'] = 'super-secret-key'  # Replace with a secure key
     app.config["JWT_ACCESS_TOKEN_EXPIRES"]  = timedelta(minutes=15)    # short-lived
     app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)       # long-lived
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_size': 20,
+    'max_overflow': 10,
+    'pool_timeout':10,   # Optional: timeout (in seconds) for getting a connection from the pool
+    'pool_recycle': 1800  # Optional: recycle connections after 30 minutes
+}
 
     # Initialize extensions
     db.init_app(app)
