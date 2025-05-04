@@ -123,13 +123,47 @@ function AboutCourse() {
     console.log("Grade button clicked"); 
     // Add your logic here
   };
-  const handleEditPrerequisites = () => {
-    console.log("Edit Prerequisites button clicked");
-    // Add your logic here
+
+  const [showEdit, setShowEdit] = useState(false);
+  const [descInput, setDescInput] = useState("");
+  const handleSubmitDescription = () => {
+    api.post('/courses/edit-course', { prev_course_id: courseId, description: descInput })
+      .then((response) => {
+        console.log('Description edited successfully:', response.data); 
+        setShowEdit(false); // Hide the edit form after submission
+        setDescInput(""); // Clear the input field
+      })
+      .catch((error) => {
+        console.error('Error editing description:', error);
+      });
   };
+
+  const [showEditPrereq, setShowEditPrereq] = useState(false);
+  const handleEditPrerequisites = () => {
+    setShowEditPrereq(true);
+  };
+  const handleSubmitEditPrereq = () => {
+    setFormData((prev) => ({ ...prev, prev_course_id: courseId }));
+    api.post('/courses/edit-course',{ ...formData, prev_course_id: courseId })
+      .then((response) => {
+        console.log('Prerequisites edited successfully:', response.data);
+        setShowEditPrereq(false); // Hide the edit form after submission
+        setPrereqInput(""); // Clear the input field
+        setFormData((prev) => ({ ...prev, prerequisites: [] })); // Clear the prerequisites list
+      })
+      .catch((error) => {
+        console.error('Error editing prerequisites:', error);
+      });
+  };
+
   const handleClearWaitlist = () => {
-    console.log("Clear Waitlist button clicked");
-    // Add your logic here
+    api.post(`/courses/${courseId}/wl_enrl?action=clear_waitlist&student_id=all`)
+      .then((response) => {
+        console.log('Waitlist cleared successfully:', response.data);
+      })
+      .catch((error) => {
+        console.error('Error clearing waitlist:', error);
+      });
   };
   const handleMoodleAnnouncement = () => {
     console.log("Moodle Announcement button clicked");
@@ -139,8 +173,11 @@ function AboutCourse() {
     console.log("Tasks and Deadline button clicked");
     // Add your logic here
   };
-  const handleEnrollmentAction = (enrollment_id, action) => {
-    api.post(`/courses/${courseId}/enrollment?action=${action}&enrollment_id=${enrollment_id}`)
+  const handleEnrollmentAction = (student_id, action) => {
+    if (action === "DAC"){
+      history.push("/DAC",{student_id: student_id,course_id: courseId});
+    }
+    api.post(`/courses/${courseId}/wl_enrl?action=${action}&student_id=${student_id}`)
       .then((response) => {
         console.log('Enrollment action successful:', response.data);
       })
@@ -155,21 +192,174 @@ function AboutCourse() {
     <div className="card">
       <h2>Course Details: {course.course_id}</h2>
       <p><strong>Name:</strong> {course.name}</p>
-      <p><strong>Description:</strong> {course.description}</p>
+      <p>
+      <strong>Description:</strong> {course.description}
+        <button
+          onClick={() => setShowEdit(true)}
+          style={{
+            color: "blue",
+            textDecoration: "underline",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            marginLeft: "10px"
+          }}
+        >
+          Edit
+        </button>
+      </p>
+
+      {showEdit && (
+        <div style={{ marginTop: "8px" }}>
+          <textarea
+            value={descInput}
+            onChange={(e) => setDescInput(e.target.value)}
+            rows={3}
+            style={{ width: "100%", marginBottom: "6px" }}
+          />
+          <button
+            onClick={handleSubmitDescription}
+            style={{
+              backgroundColor: "blue",
+              color: "white",
+              border: "none",
+              padding: "6px 12px",
+              cursor: "pointer"
+            }}
+          >
+            Submit
+          </button>
+        </div>
+      )}
+
       <p><strong>Credits:</strong> {course.credits}</p>
       <p><strong>Department:</strong> {course.department_id}</p>
+      {course.offerings && course.offerings.length > 0 && (
+            <div>
+              <h3>Offerings</h3>
+              <ul>
+                {course.offerings.map((o, idx) => (
+                  <li key={idx}>
+                    Offering ID: {o.offering_id}, Semester ID: {o.semester_id}, Instructor ID: {o.instructor_id}, Max Seats: {o.max_seats}, Current Seats: {o.current_seats}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {course.prerequisites && course.prerequisites.length > 0 ? (
+            <div>
+              <h3>Prerequisites</h3>
+              <ul>
+                {course.prerequisites.map((p, idx) => (
+                  <li key={idx}>
+                    Prerequisite ID: {p.prerequisite_id}, Prerequisite Course ID: {p.prereq_course_id}
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={handleEditPrerequisites}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "blue",
+                  textDecoration: "underline",
+                  cursor: "pointer",
+                  padding: 0,
+                  marginTop: "8px"
+                }}
+              >
+                Edit
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <h3 style={{ margin: 0 }}>Prerequisites</h3>
+              <button
+                onClick={handleEditPrerequisites}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "blue",
+                  textDecoration: "underline",
+                  cursor: "pointer",
+                  padding: 0,
+                  marginTop: "2px"
+                }}
+              >
+                Add Prerequisites
+              </button>
+            </div>
+          )}
+
+
+          {course.allowed_tags && course.allowed_tags.length > 0 && (
+            <div>
+              <h3>Allowed Tags</h3>
+              <ul>
+                {course.allowed_tags.map((tag, idx) => (
+
+                  <li key={idx}>
+                    Allowed Tag ID: {tag.allowed_tag_id}, Department ID: {tag.department_id}, Tag ID: {tag.tag_id}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
       <button
         style={{ backgroundColor: "blue", color: "white", padding: "10px 20px", margin: "5px", border: "none", cursor: "pointer" }}
         onClick={handleGrade}
       >
         Grade
       </button>
-      <button
+      {/* <button
         style={{ backgroundColor: "green", color: "white", padding: "10px 20px", margin: "5px", border: "none", cursor: "pointer" }}
         onClick={handleEditPrerequisites}
       >
         Edit Prerequisites
-      </button>
+      </button> */}
+
+      {showEditPrereq && (
+        <div style={{ marginTop: "10px" }}>
+          <input
+            type="text"
+            value={prereqInput}
+            onChange={(e) => setPrereqInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddToList("prerequisites"))}
+            placeholder="Enter and press Enter"
+          />
+          <div style={{ marginTop: "4px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
+            {formData.prerequisites.map((item, index) => (
+              <span
+                key={index}
+                style={{
+                  padding: "4px 8px",
+                  background: "#eee",
+                  borderRadius: "12px",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                {item}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveFromList("prerequisites", index)}
+                  style={{ marginLeft: "6px", cursor: "pointer", border: "none", background: "transparent" }}
+                >
+                  ❌
+                </button>
+              </span>
+            ))}
+          </div>
+          <button
+            onClick={handleSubmitEditPrereq}
+            style={{ marginTop: "10px", backgroundColor: "blue", color: "white", padding: "6px 12px", border: "none" }}
+          >
+            Submit
+          </button>
+        </div>
+      )}
+
       <button
         style={{ backgroundColor: "red", color: "white", padding: "10px 20px", margin: "5px", border: "none", cursor: "pointer" }}
         onClick={handleClearWaitlist}
@@ -191,45 +381,6 @@ function AboutCourse() {
 
       {role === 'admin' && (
         <>
-          {course.offerings && course.offerings.length > 0 && (
-            <div>
-              <h3>Offerings</h3>
-              <ul>
-                {course.offerings.map((o, idx) => (
-                  <li key={idx}>
-                    Offering ID: {o.offering_id}, Semester ID: {o.semester_id}, Instructor ID: {o.instructor_id}, Max Seats: {o.max_seats}, Current Seats: {o.current_seats}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {course.prerequisites && course.prerequisites.length > 0 && (
-            <div>
-              <h3>Prerequisites</h3>
-              <ul>
-                {course.prerequisites.map((p, idx) => (
-                  <li key={idx}>
-                    Prerequisite ID: {p.prerequisite_id}, Prerequisite Course ID: {p.prereq_course_id}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {course.allowed_tags && course.allowed_tags.length > 0 && (
-            <div>
-              <h3>Allowed Tags</h3>
-              <ul>
-                {course.allowed_tags.map((tag, idx) => (
-
-                  <li key={idx}>
-                    Allowed Tag ID: {tag.allowed_tag_id}, Department ID: {tag.department_id}, Tag ID: {tag.tag_id}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
           <button onClick={() => setShowForm(true)} style={{ marginTop: "16px" }}>
             Edit Course Details
           </button>
@@ -390,19 +541,19 @@ function AboutCourse() {
                         <td style={{ border: "1px solid #ddd", padding: "8px", textAlign: "center" }}>
                           <button 
                             style={{ backgroundColor: "red", color: "white", padding: "5px 10px", border: "none", cursor: "pointer" }} 
-                            onClick={() => handleEnrollmentAction(enroll.enrollment_id)}
+                            onClick={() => handleEnrollmentAction(enroll.student_id, "DAC")}
                           >
                             DAC
                           </button>
                           <button 
                             style={{ backgroundColor: "orange", color: "white", padding: "5px 10px", border: "none", cursor: "pointer", marginLeft: "5px" }} 
-                            onClick={() => handleEnrollmentAction(enroll.enrollment_id)}
+                            onClick={() => handleEnrollmentAction(enroll.student_id, "kick")}
                           >
                             Kick
                           </button>
                           <button 
                             style={{ backgroundColor: "green", color: "white", padding: "5px 10px", border: "none", cursor: "pointer", marginLeft: "5px" }} 
-                            onClick={() => handleEnrollmentAction(enroll.enrollment_id)}
+                            onClick={() => handleEnrollmentAction(enroll.student_id, "marks")}
                           >
                             Marks
                           </button>

@@ -14,6 +14,7 @@ import RegisterCourses from './components/Register_courses';
 import InstructorCourses from './components/InstructorCourses';
 import AdminDashboard from './components/AdminDashboard';
 import AboutCourse from './components/AboutCourse';
+import ReportStudent from './components/Textbox';
 
 
 function App() {
@@ -33,6 +34,8 @@ function App() {
         <Route path="/instructor-courses" render={() => (isRegistered() ? <InstructorCourses /> : <Redirect to="/registration" />)} />
         {/* <Route path="/add-course" render={() => (isRegistered() ? <InstrcutorCourses /> : <Redirect to="/signup" />)} /> */}
         <Route path="/admin-dashboard" render={() => (isRegistered() ? <AdminDashboard /> : <Redirect to="/registration" />)} />
+        <Route path="/DAC" render={() => (isRegistered() ? <ReportStudent /> : <Redirect to="/registration" />)} />
+        
         <Route path="/" component={Signup} />
       </Switch>
     </Router>

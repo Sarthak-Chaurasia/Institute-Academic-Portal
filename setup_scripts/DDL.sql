@@ -86,6 +86,8 @@ CREATE TABLE enrollments (
     status VARCHAR(20) NOT NULL CHECK (status IN ('enrolled', 'dropped')),
     enrollment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     tag VARCHAR(50)
+    marks FLOAT CHECK (marks >= 0 AND marks <= 100),
+    attendance FLOAT CHECK (attendance >= 0 AND attendance <= 100),
 );
 
 -- Table for Tags

@@ -163,6 +163,10 @@ class Course(db.Model):
 
         while queue:
             current = queue.pop(0)
+            
+            if current == str(self.course_id):  # prevent self-reference
+                continue
+
             if current in visited:
                 continue
             visited.add(current)
@@ -298,6 +302,8 @@ class Enrollment(db.Model):
     status = db.Column(db.String(20), nullable=False)
     enrollment_date = db.Column(db.DateTime, server_default=db.func.current_timestamp())
     tag = db.Column(db.String(50), nullable=True)
+    # marks = db.Column(db.Float, nullable=True)  # New field for marks
+    # attendance = db.Column(db.Float, nullable=True)  # New field for attendance
 
     __table_args__ = (
         db.CheckConstraint("status IN ('enrolled', 'dropped')", name='check_status_valid'),
