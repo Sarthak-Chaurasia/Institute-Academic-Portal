@@ -17,6 +17,7 @@ import AboutCourse from './components/AboutCourse';
 import ReportStudent from './components/Textbox';
 import TasksMarks from './components/TasksMarks';
 import Announcement from './components/Announcement';
+import Feedback from './components/Feedback';
 
 
 function App() {
@@ -39,6 +40,7 @@ function App() {
         <Route path="/DAC" render={() => (isRegistered() ? <ReportStudent /> : <Redirect to="/registration" />)} />
         <Route path="/tasks-marks/:courseId" render={() => (isRegistered() ? <TasksMarks /> : <Redirect to="/registration" />)} />
         <Route path="/announcement" render={() => (isRegistered() ? <Announcement /> : <Redirect to="/registration" />)} />
+        <Route path="/feedback" render={() => (isRegistered() ? <Feedback /> : <Redirect to="/registration" />)} />
         <Route path="/" component={Signup} />
       </Switch>
     </Router>

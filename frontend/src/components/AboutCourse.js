@@ -173,6 +173,12 @@ function AboutCourse() {
   const handleTasksAndDeadline = () => {
     history.push(`/tasks-marks/${courseId}`);
   };
+
+  const handleFeedback = () => {
+    console.log("Feedback button clicked");
+    return history.push('/feedback');
+  };
+
   const handleEnrollmentAction = (student_id, action) => {
     if (action === "DAC"){
       history.push("/DAC",{student_id: student_id,course_id: courseId});
@@ -360,18 +366,36 @@ function AboutCourse() {
       >
         Clear Waitlist
       </button>
+      {role === 'instructor' && (
+  <>
       <button
         style={{ backgroundColor: "purple", color: "white", padding: "10px 20px", margin: "5px", border: "none", cursor: "pointer" }}
         onClick={handleMoodleAnnouncement}
       >
         Moodle Announcement
       </button>
+      </>
+)}
       <button
         style={{ backgroundColor: "orange", color: "white", padding: "10px 20px", margin: "5px", border: "none", cursor: "pointer" }}
         onClick={handleTasksAndDeadline}
       >
         Tasks and Deadline
       </button>
+      {role === 'student' && (
+  <>
+    <button
+      style={{
+        backgroundColor: "green",color: "white",padding: "10px 20px",margin: "5px",border: "none",cursor: "pointer"
+      }}
+      onClick={handleFeedback}
+    >
+      Give Feedback
+    </button>
+  </>
+)}
+
+      
 
       {role === 'admin' && (
         <>
