@@ -1,1 +1,2 @@
-enrollment_id,student_id,offering_id,status,enrollment_date,tag
+enrollment_id,student_id,offering_id,status,enrollment_date,tag,attendance
+1,22B0101,5,enrolled,2025-05-04 09:55:40.981700,Core,

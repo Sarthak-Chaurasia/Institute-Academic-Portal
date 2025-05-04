@@ -1,9 +1,30 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request, get_jwt
-from models import db, User, Student, Instructor, Department, Course, CourseOffering, Semester, Waitlist, Enrollment, Task, TaskMark # Import from models
+from models import db, User, Student, Instructor, Department, Course, CourseOffering, Semester, Waitlist, Enrollment, Task, TaskMark, Grade # Import from models
 from routes.auth import role_required
 
 courses_bp = Blueprint('courses', __name__)
+
+def get_grade(marks,grading_scheme):
+    if grading_scheme == 'absolute':
+        if marks >= 90:
+            return "AA"
+        elif marks >= 80:
+            return "AB"
+        elif marks >= 70:
+            return "BB"
+        elif marks >= 60:
+            return "BC"
+        elif marks >= 50:
+            return "CC"
+        elif marks >= 40:
+            return "CD"
+        elif marks >= 30:
+            return "DD"
+        else:
+            return "FR"
+    # elif grading_scheme == 'relative':
+
 
 @courses_bp.route('', methods=['GET'],strict_slashes=False)
 def get_courses():
@@ -282,8 +303,29 @@ def wl_enrl_course(course_id):
                 return jsonify({"msg": "Student has been removed from the course"}), 200
             else:
                 return jsonify({"msg": "Student is not enrolled in this course"}), 404
-        # elif action == 'marks':
-
+        elif action == 'marks':
+            data = request.get_json()
+            name = data.get('name')
+            marks = data.get('marks')
+            task = Task.query.filter_by(name=name, offering_id=offering_id).first()
+            if not task:
+                return jsonify({"msg": "Task not found"}), 404
+            task_id = task.task_id
+            enrollment_id = Enrollment.query.filter_by(offering_id=offering_id, student_id=student_id).first().enrollment_id
+            taskmark = TaskMark.query.filter_by(task_id=task_id, enrollment_id=enrollment_id).first()
+            if taskmark:
+                taskmark.marks_obtained = marks
+                db.session.commit()
+                return jsonify({"msg": "Marks updated successfully"}), 200
+            else:
+                taskmark = TaskMark(
+                    task_id=task_id,
+                    enrollment_id=enrollment_id,
+                    marks_obtained=marks
+                )
+                db.session.add(taskmark)
+                db.session.commit()
+                return jsonify({"msg": "Marks added successfully"}), 201
         else:
             return jsonify({"msg": "Invalid action"}), 400
     else:
@@ -349,6 +391,10 @@ def add_course_task(course_id):
                     existing_task.max_marks = max_marks
                 if due_date is not None and due_date != existing_task.due_date:
                     existing_task.due_date = due_date
+                # total_marks = db.session.query(db.func.coalesce(db.func.sum(Task.max_marks), 0)).filter_by(offering_id=offering.offering_id).scalar()
+                # if max_marks is not None and total_marks + float(max_marks) > 100:
+                #     print(f"Total max marks for tasks exceeds 100: {total_marks}")
+                #     return jsonify({"msg": "Total max marks for tasks exceeds 100"}), 400
                 db.session.commit()
                 return jsonify(existing_task.to_dict()), 200
             else:
@@ -360,6 +406,10 @@ def add_course_task(course_id):
                     max_marks=max_marks,
                     due_date=due_date,
                 )
+                # total_marks = db.session.query(db.func.coalesce(db.func.sum(Task.max_marks), 0)).filter_by(offering_id=offering.offering_id).scalar()
+                # if total_marks + float(max_marks) > 100:
+                #     print(f"Total max marks for tasks exceeds 100: {total_marks}")
+                #     return jsonify({"msg": "Total max marks for tasks exceeds 100"}), 400
                 db.session.add(new_task)
                 db.session.commit()
                 return jsonify(new_task.to_dict()), 201
@@ -367,6 +417,7 @@ def add_course_task(course_id):
             return jsonify({"msg": "You are not authorized to perform this action"}), 403
     except Exception as e:
         print(f"Error: {e}")
+        # db.session.rollback()
         return jsonify({"msg": "Internal server error"}), 500
     
 @courses_bp.route('/<course_id>', methods=['GET'], strict_slashes=False)
@@ -383,9 +434,23 @@ def get_course(course_id):
         offerings = CourseOffering.query.filter_by(course_id=course_id, instructor_id=instructor_id).all()
         result = []
         for offering in offerings:
+            enrollments = Enrollment.query.filter_by(offering_id=offering.offering_id).all()
             offering_dict = offering.to_dict()
             offering_dict['waitlists'] = [w.to_dict() for w in offering.waitlists]
-            offering_dict['enrollments'] = [e.to_dict() for e in offering.enrollments]
+            offering_dict['enrollments'] = []
+            for enrollment in enrollments:
+                enrollment_id = enrollment.enrollment_id
+                grade = Grade.query.filter_by(enrollment_id=enrollment_id).first()
+                taskmarks = TaskMark.query.filter_by(enrollment_id=enrollment_id).all()
+                total_marks = 0
+                for taskmark in taskmarks:
+                    max_marks = taskmark.task.max_marks
+                    marks = taskmark.marks_obtained * max_marks / 100 if max_marks > 0 else 0
+                    total_marks += marks
+                enrollment_dict = enrollment.to_dict()
+                enrollment_dict['grade'] = grade.to_dict() if grade else "NA"
+                enrollment_dict['total_marks'] = total_marks
+                offering_dict['enrollments'].append(enrollment_dict)
             result.append(offering_dict)
         print(f"Found {len(result)} offerings for instructor {instructor_id}")
         return jsonify(result), 200
@@ -409,6 +474,7 @@ def get_course(course_id):
     return jsonify(course.to_dict()), 200
 
 @courses_bp.route('/<course_id>', methods=['POST'], strict_slashes=False)
+
 def update_course(course_id):
     verify_jwt_in_request()
     user_id = get_jwt_identity()
@@ -422,5 +488,35 @@ def update_course(course_id):
         course.description = data.get('description', course.description)
         db.session.commit()
         return jsonify(course.to_dict()), 200
+    elif user_role == 'instructor':
+        instructor_id = Instructor.query.filter_by(user_id=user_id).first().instructor_id
+        current_semester = Semester.query.order_by(Semester.start_date.desc()).first()
+        offering = CourseOffering.query.filter_by(course_id=course_id, instructor_id=instructor_id, semester_id=current_semester.semester_id).first()
+        if not offering:
+            return jsonify({"msg": "No offerings found for this course"}), 404  
+        enrollments = Enrollment.query.filter_by(offering_id=offering.offering_id).all()
+        grading_scheme = request.args.get('grading_scheme')
+        for enrollment in enrollments:
+            grade_entry = Grade.query.filter_by(enrollment_id=enrollment.enrollment_id).first()
+            total_marks = 0
+            taskmarks = TaskMark.query.filter_by(enrollment_id=enrollment.enrollment_id).all()
+            for taskmark in taskmarks:
+                max_marks = taskmark.task.max_marks
+                marks = taskmark.marks_obtained * max_marks / 100 if max_marks > 0 else 0
+                total_marks += marks
+            print(f"Total marks for enrollment {enrollment.enrollment_id}: {total_marks}")
+            print(f"Grading scheme: {grading_scheme}")
+            new_grade = get_grade(total_marks,grading_scheme)
+            if grade_entry:
+                grade_entry.grade = new_grade
+            else:
+                new_grade_entry = Grade(
+                    enrollment_id=enrollment.enrollment_id,
+                    grade=new_grade
+                )
+                db.session.add(new_grade_entry)
+            # enrollment.status = 'completed'
+            db.session.commit()
+        return jsonify({"msg": "Grades updated successfully"}), 200
     else:
         return jsonify({"msg": "You are not authorized to perform this action"}), 403

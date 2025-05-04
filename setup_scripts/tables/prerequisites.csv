@@ -1,4 +1,6 @@
 prerequisite_id,course_id,prereq_course_id
+1,CS213,CS101
+2,CS218,CS213
 3,CS219,CS101
 4,CS786,CS101
 5,CS786,CS213

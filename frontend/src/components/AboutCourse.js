@@ -4,6 +4,8 @@ import api from '../api';
 import jwt_decode from 'jwt-decode';
 import { useHistory } from 'react-router-dom/cjs/react-router-dom.min';
 
+
+
 function AboutCourse() {
   const { courseId } = useParams();
   const [course, setCourse] = useState(null);
@@ -11,6 +13,9 @@ function AboutCourse() {
   const [role, setRole] = useState('');
   const history = useHistory();
   let newcourseid = courseId; // Initialize newcourseid with courseId
+  const [showMarksDialog, setShowMarksDialog] = useState(false); // To show/hide marks dialog
+  const [marksData, setMarksData] = useState({ name: '', marks: '' }); // To store the name and marks
+
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -121,7 +126,7 @@ function AboutCourse() {
 
   //empty handle functions for buttons
   const handleGrade = () => {
-    console.log("Grade button clicked"); 
+    api.post(`/courses/${courseId}?grading_scheme=absolute`) 
     // Add your logic here
   };
 
@@ -174,15 +179,38 @@ function AboutCourse() {
     history.push(`/tasks-marks/${courseId}`);
   };
   const handleEnrollmentAction = (student_id, action) => {
-    if (action === "DAC"){
-      history.push("/DAC",{student_id: student_id,course_id: courseId});
+    if (action === "DAC") {
+      history.push("/DAC", { student_id, course_id: courseId });
+    } else if (action === "marks") {
+      // Trigger dialog to enter name and marks
+      setShowMarksDialog(true);
+    } else {
+      // For other actions (like kick), just send the action to API
+      api.post(`/courses/${courseId}/wl_enrl?action=${action}&student_id=${student_id}`)
+        .then((response) => {
+          console.log('Enrollment action successful:', response.data);
+        })
+        .catch((error) => {
+          console.error('Error performing enrollment action:', error);
+        });
     }
-    api.post(`/courses/${courseId}/wl_enrl?action=${action}&student_id=${student_id}`)
+  };
+
+  const handleMarksSubmit = (e,student_id) => {
+    e.preventDefault();
+
+    // Send the marks along with the name to the API
+    api.post(`/courses/${courseId}/wl_enrl?action=marks&student_id=${student_id}`, {
+      name: marksData.name,
+      marks: marksData.marks
+    })
       .then((response) => {
-        console.log('Enrollment action successful:', response.data);
+        console.log('Marks action successful:', response.data);
+        setShowMarksDialog(false); // Close the dialog after submission
+        setMarksData({ name: '', marks: '' }); // Clear form data
       })
       .catch((error) => {
-        console.error('Error performing enrollment action:', error);
+        console.error('Error performing marks action:', error);
       });
   };
 
@@ -519,7 +547,9 @@ function AboutCourse() {
                       <th style={{ border: "1px solid #ddd", padding: "8px" }}>Status</th>
                       <th style={{ border: "1px solid #ddd", padding: "8px" }}>Date</th>
                       <th style={{ border: "1px solid #ddd", padding: "8px" }}>Tag</th>
-                      <th style={{ border: "1px solid #ddd", padding: "8px" }}>Actions</th> {/* New column for action buttons */}
+                      <th style={{ border: "1px solid #ddd", padding: "8px" }}>Marks</th>
+                      <th style={{ border: "1px solid #ddd", padding: "8px" }}>Grade</th>
+                      <th style={{ border: "1px solid #ddd", padding: "8px" }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -530,7 +560,8 @@ function AboutCourse() {
                         <td style={{ border: "1px solid #ddd", padding: "8px" }}>{enroll.status}</td>
                         <td style={{ border: "1px solid #ddd", padding: "8px" }}>{new Date(enroll.enrollment_date).toLocaleDateString()}</td>
                         <td style={{ border: "1px solid #ddd", padding: "8px" }}>{enroll.tag}</td>
-
+                        <td style={{ border: "1px solid #ddd", padding: "8px" }}>{enroll.total_marks?.toFixed(2) ?? 'NA'}</td>
+                        <td style={{ border: "1px solid #ddd", padding: "8px" }}>{enroll.grade?.grade || "NA"}</td>
                         {/* Action Buttons */}
                         <td style={{ border: "1px solid #ddd", padding: "8px", textAlign: "center" }}>
                           <button 
@@ -545,12 +576,43 @@ function AboutCourse() {
                           >
                             Kick
                           </button>
-                          <button 
-                            style={{ backgroundColor: "green", color: "white", padding: "5px 10px", border: "none", cursor: "pointer", marginLeft: "5px" }} 
+                          <button
+                            style={{ backgroundColor: "green", color: "white", padding: "5px 10px", border: "none", cursor: "pointer", marginLeft: "5px" }}
                             onClick={() => handleEnrollmentAction(enroll.student_id, "marks")}
                           >
                             Marks
                           </button>
+
+                          {/* Marks Dialog */}
+                          {showMarksDialog && (
+                            <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: 'white', padding: '20px', borderRadius: '5px', boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)' }}>
+                              <h3>Enter Marks</h3>
+                              <form onSubmit={(e) => handleMarksSubmit(e, enroll.student_id)}>
+                                <div>
+                                  <label>Name: </label>
+                                  <input
+                                    type="text"
+                                    value={marksData.name}
+                                    onChange={(e) => setMarksData({ ...marksData, name: e.target.value })}
+                                    required
+                                  />
+                                </div>
+                                <div>
+                                  <label>Percentage Marks: </label>
+                                  <input
+                                    type="number"
+                                    value={marksData.marks}
+                                    onChange={(e) => setMarksData({ ...marksData, marks: e.target.value })}
+                                    required
+                                  />
+                                </div>
+                                <div>
+                                  <button type="submit" style={{ marginRight: '10px' }}>Submit</button>
+                                  <button type="button" onClick={() => setShowMarksDialog(false)}>Cancel</button>
+                                </div>
+                              </form>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))}

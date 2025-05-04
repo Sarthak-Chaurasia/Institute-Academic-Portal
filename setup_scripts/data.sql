@@ -117,11 +117,24 @@ INSERT INTO course_offerings(offering_id, course_id, semester_id, instructor_id,
 --   (3, '21CS1001', 3, 'enrolled', CURRENT_TIMESTAMP, 'elective'),
 --   (4, '21EE1003', 1, 'enrolled', CURRENT_TIMESTAMP, 'core'),
 --   (5, '21CS1002', 4, 'dropped', CURRENT_TIMESTAMP, 'core');
+INSERT INTO enrollments (enrollment_id, student_id, offering_id, status, enrollment_date, tag, attendance) 
+VALUES (1, '22B0101', 5, 'enrolled', '2025-05-04 09:55:40.981700', 'Core', NULL);
+
 
 -- -- Waitlists
 -- INSERT INTO waitlists(waitlist_id, student_id, offering_id, position, timestamp) VALUES
 --   (1, '21CS1002', 5, 1, CURRENT_TIMESTAMP),
 --   (2, '21EE1003', 5, 2, CURRENT_TIMESTAMP);
+
+INSERT INTO tasks (task_id, offering_id, name, max_marks, release_date, due_date)
+VALUES (14, 5, 'sdaf', 50.0, '2025-05-04 11:50:24.398283', '2025-05-18 11:50:00'),
+VALUES (1, 5, 'as1', 50.0, '2025-05-04 09:08:41.551718', '2025-05-18 11:50:00');
+
+
+INSERT INTO task_marks (taskmark_id, enrollment_id, task_id, marks_obtained) 
+VALUES (2, 1, 14, 80.0),
+VALUES (1, 1, 1, 60.0);
+
 
 -- -- Grades
 -- INSERT INTO grades(grade_id, enrollment_id, grade, submission_date) VALUES
@@ -129,6 +142,9 @@ INSERT INTO course_offerings(offering_id, course_id, semester_id, instructor_id,
 --   (2, 2, 'B', CURRENT_TIMESTAMP),
 --   (3, 3, 'A', CURRENT_TIMESTAMP),
 --   (4, 4, 'C', CURRENT_TIMESTAMP);
+INSERT INTO grades (grade_id, enrollment_id, grade, submission_date) 
+VALUES (1, 1, 'BB', '2025-05-04 12:23:51.425441');
+
 
 -- -- Prerequisites
 INSERT INTO prerequisites(prerequisite_id, course_id, prereq_course_id) VALUES

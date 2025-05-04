@@ -28,6 +28,7 @@ CS496,BTP II,Interdisciplinary STEM Course.,1,1
 CS6002,Selected Areas of Mechanism Design,Interdisciplinary STEM Course.,5,1
 CS603,Geometric Algorithms,Interdisciplinary STEM Course.,11,1
 CS6102,Implementation Security in Cryptography,Interdisciplinary STEM Course.,6,1
+CS786,Learning with Graphs,,6,1
 EE114,Power Engineering - I,"Fundamentals of power systems, machines, and transmission.",6,2
 EE204,Analog Circuits,Theory and application of analog electronic circuits.,6,2
 EE207,Electronic Devices & Circuits,Introduction to electronic components and their circuit applications.,6,2
@@ -47,4 +48,3 @@ EE451,Supervised Research Exposition,Guided research with report and presentatio
 EE462,DSP Software and Hardware Lab,DSP implementation in software and hardware environments.,4,2
 EE491,BTP I,First phase of B.Tech project with research focus.,6,2
 EE492,BTP II,Final phase of B.Tech project with implementation.,6,2
-CS786,Learning with Graphs,,6,1

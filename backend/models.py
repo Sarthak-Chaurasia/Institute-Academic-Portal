@@ -349,7 +349,7 @@ class Enrollment(db.Model):
     attendance = db.Column(db.Float, nullable=True)  # New field for attendance
 
     __table_args__ = (
-        db.CheckConstraint("status IN ('enrolled', 'dropped')", name='check_status_valid'),
+        db.CheckConstraint("status IN ('enrolled', 'dropped', 'completed')", name='check_status_valid'),
     )
 
     def to_dict(self):
@@ -390,8 +390,16 @@ class Grade(db.Model):
     submission_date = db.Column(db.DateTime, server_default=db.func.current_timestamp())
 
     __table_args__ = (
-        db.CheckConstraint("grade IN ('A', 'B', 'C', 'D', 'F')", name='check_grade_values'),
+        db.CheckConstraint("grade IN ('AA', 'AB', 'BB', 'BC', 'CC', 'CD', 'DD', 'FR')", name='check_grade_values'),
     )
+
+    def to_dict(self):
+        return {
+            'grade_id': self.grade_id,
+            'enrollment_id': self.enrollment_id,
+            'grade': self.grade,
+            'submission_date': self.submission_date
+        }
 
 class Prerequisite(db.Model):
     __tablename__ = 'prerequisites'

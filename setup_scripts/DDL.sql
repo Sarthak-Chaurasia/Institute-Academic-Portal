@@ -92,7 +92,7 @@ CREATE TABLE enrollments (
     enrollment_id SERIAL PRIMARY KEY,
     student_id VARCHAR NOT NULL REFERENCES students(student_id) ON DELETE CASCADE,
     offering_id INT NOT NULL REFERENCES course_offerings(offering_id) ON DELETE CASCADE,
-    status VARCHAR(20) NOT NULL CHECK (status IN ('enrolled', 'dropped')),
+    status VARCHAR(20) NOT NULL CHECK (status IN ('enrolled', 'dropped','completed')),
     enrollment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     tag VARCHAR(50),
     attendance INT CHECK (attendance >= 0 AND attendance <= 100)
@@ -127,7 +127,7 @@ CREATE TABLE waitlists (
 CREATE TABLE grades (
     grade_id SERIAL PRIMARY KEY,
     enrollment_id INT UNIQUE NOT NULL REFERENCES enrollments(enrollment_id) ON DELETE CASCADE,
-    grade VARCHAR(2) NOT NULL CHECK (grade IN ('A', 'B', 'C', 'D', 'F')),
+    grade VARCHAR(2) NOT NULL CHECK (grade IN ('AA', 'AB', 'BB', 'BC', 'CC', 'CD', 'DD', 'FR')),
     submission_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
