@@ -126,14 +126,14 @@ VALUES (1, '22B0101', 5, 'enrolled', '2025-05-04 09:55:40.981700', 'Core', NULL)
 --   (1, '21CS1002', 5, 1, CURRENT_TIMESTAMP),
 --   (2, '21EE1003', 5, 2, CURRENT_TIMESTAMP);
 
-INSERT INTO tasks (task_id, offering_id, name, max_marks, release_date, due_date)
-VALUES (14, 5, 'sdaf', 50.0, '2025-05-04 11:50:24.398283', '2025-05-18 11:50:00'),
-VALUES (1, 5, 'as1', 50.0, '2025-05-04 09:08:41.551718', '2025-05-18 11:50:00');
+INSERT INTO tasks (task_id, offering_id, name, max_marks, release_date, due_date) VALUES 
+(14, 5, 'sdaf', 50.0, '2025-05-04 11:50:24.398283', '2025-05-18 11:50:00'),
+(1, 5, 'as1', 50.0, '2025-05-04 09:08:41.551718', '2025-05-18 11:50:00');
 
 
-INSERT INTO task_marks (taskmark_id, enrollment_id, task_id, marks_obtained) 
-VALUES (2, 1, 14, 80.0),
-VALUES (1, 1, 1, 60.0);
+INSERT INTO task_marks (taskmark_id, enrollment_id, task_id, marks_obtained) VALUES 
+(2, 1, 14, 80.0),
+(1, 1, 1, 60.0);
 
 
 -- -- Grades
