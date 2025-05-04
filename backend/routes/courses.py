@@ -25,15 +25,27 @@ def get_grade(marks,grading_scheme):
             return "FR"
     # elif grading_scheme == 'relative':
 
+@courses_bp.route('/departments', methods=['GET'])
+@jwt_required()
+def get_departments():
+    departments = Department.query.all()
+    return jsonify([{'id': dept.department_id, 'name': dept.name} for dept in departments]), 200
 
 @courses_bp.route('', methods=['GET'],strict_slashes=False)
 def get_courses():
-    print("Hitting /courses")
     courses = Course.query.all()
     if not courses:
         return jsonify({"msg": "No courses found"}), 404
     else :
         print(f"Found {len(courses)} courses")
+    return jsonify([course.to_dict() for course in courses]), 200
+
+@courses_bp.route('/department/<department_id>', methods=['GET'])
+@jwt_required()
+def get_courses_by_department(department_id):
+    courses = Course.query.filter_by(department_id=department_id).all()
+    if not courses:
+        return jsonify({"msg": f"No courses found for department {department_id}"}), 404
     return jsonify([course.to_dict() for course in courses]), 200
 
 
@@ -110,12 +122,12 @@ def add_course():
 def edit_course():
     try:
         data = request.get_json()
-        print("[DEBUG] Received data:", data)
+        # print("[DEBUG] Received data:", data)
 
         verify_jwt_in_request()
         user_id = get_jwt_identity()
         user_role = get_jwt()['role']
-        print(f"[DEBUG] JWT verified. User ID: {user_id}, Role: {user_role}")
+        # print(f"[DEBUG] JWT verified. User ID: {user_id}, Role: {user_role}")
 
         if user_role == 'admin':
             previous_course_code = data.get('prev_course_id') or None
@@ -265,7 +277,7 @@ def wl_enrl_course(course_id):
         current_semester = Semester.query.order_by(Semester.start_date.desc()).first()
         offering = CourseOffering.query.filter_by(course_id=course_id, instructor_id=instructor_id, semester_id=current_semester.semester_id).all()[0]
         if not offering:
-            print(f"Found {len(offering)} offerings for instructor {instructor_id}")
+            # print(f"Found {len(offering)} offerings for instructor {instructor_id}")
             return jsonify({"msg": "No offerings found for this course"}), 404
         action = request.args.get('action')
         student_id = request.args.get('student_id')

@@ -31,7 +31,7 @@ def signup():
         db.session.add(new_user)
         db.session.commit()
         token = create_access_token(identity=str(new_user.user_id), additional_claims={"role": new_user.role}) 
-        print("token: ", token, "user: ", new_user.username," role: ", new_user.role)
+        # print("token: ", token, "user: ", new_user.username," role: ", new_user.role)
         print("User created successfully")
         if role == 'admin':
             new_admin = Admin(user_id=new_user.user_id,admin_id='admin'+str(new_user.user_id))
@@ -49,13 +49,13 @@ def signup():
 @auth_bp.route('/login', methods=['POST'])
 def login():
     """Authenticate a user and return a JWT token."""
-    print("Login endpoint hit")
+    # print("Login endpoint hit")
     data = request.get_json()
     # user = User.query.filter_by(username=data.get('username')).first()
     student = Student.query.filter_by(student_id=data.get('Id')).first() or None
     instructor = Instructor.query.filter_by(instructor_id=data.get('Id')).first() or None
     admin = Admin.query.filter_by(admin_id=data.get('Id')).first() or None
-    print("Student: ", student, "Instructor: ", instructor)
+    # print("Student: ", student, "Instructor: ", instructor)
     if not student and not instructor and not admin:
         print("User not found")
         return jsonify({"msg": "User not found"}), 404
@@ -69,7 +69,7 @@ def login():
     if user and user.check_password(data.get('password')):
         token = create_access_token(identity=str(user.user_id), additional_claims={"role": user.role})
         refresh_token = create_refresh_token(identity=str(user.user_id), additional_claims={"role": user.role})
-        print("token: ", token, "user: ", user.username," role: ", user.role)
+        # print("token: ", token, "user: ", user.username," role: ", user.role)
         return jsonify(access_token=token, refresh_token = refresh_token), 200
     return jsonify({"msg": "Invalid credentials"}), 401
 

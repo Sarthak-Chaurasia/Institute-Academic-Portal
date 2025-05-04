@@ -1,265 +1,264 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useHistory } from 'react-router-dom';
 import api from '../api';
-import { useHistory } from 'react-router-dom/cjs/react-router-dom.min';
 import jwt_decode from 'jwt-decode';
 
 function Courses() {
-  const [courses, setCourses] = useState([]);
-  const history = useHistory();
-  const [role, setRole] = useState('');
-  let decoded = null;
+  const [departments, setDepartments]           = useState([]);
+  const [courses, setCourses]                   = useState([]);
+  const [selectedDepartment, setSelectedDepartment] = useState(null);
+  const [inputQuery, setInputQuery]             = useState('');
+  const [searchType, setSearchType]             = useState('id'); // for both departments & courses
+  const [filters, setFilters]                   = useState({ credits: [], prereqSatisfied: false });
+  const [showFilter, setShowFilter]             = useState(false);
+  const [completedCourses, setCompletedCourses] = useState([]);
+  const [prerequisites, setPrerequisites]       = useState({});
+  const [role, setRole]                         = useState('');
+  const [showDepartments, setShowDepartments]   = useState(true);
 
+  const history = useHistory();
+
+  // shared table styles
+  const headerStyle = { border: '1px solid #ccc', padding: '10px' };
+  const cellStyle   = { border: '1px solid #ddd', padding: '10px' };
+
+  // on mount: fetch departments + student data if needed
   useEffect(() => {
     const token = localStorage.getItem('token');
-    decoded = jwt_decode(token);
-    const role = decoded?.role;
-    setRole(role);
-    api.get('/courses')
-      .then((response) => {
-        console.log('Courses:', response.data);
-        setCourses(response.data);
-      })
-      .catch((error) => console.error('Error fetching courses', error));
-  }, []);
-
-  const handleCourseClick = (id) => {
-    // Optional: verify the course exists or prefetch it
-    history.push(`/courses/${id}`);
-  };
-
-  const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({
-    course_id: "",
-    name: "",
-    semester: "",
-    max_seats: "",
-    credits: "",
-    prerequisites: [],
-    description: "",
-    tags: [],
-  });
-  const [prereqInput, setPrereqInput] = useState("");
-  const [tagInput, setTagInput] = useState("");
-
-  const handleAddToList = (type) => {
-    if (type === "prerequisites" && prereqInput.trim()) {
-      setFormData((prev) => ({
-        ...prev,
-        prerequisites: [...prev.prerequisites, prereqInput.trim()],
-      }));
-      setPrereqInput("");
-    } else if (type === "tags" && tagInput.trim()) {
-      // Tags can't be empty
-      if (tagInput.trim()) {
-        setFormData((prev) => ({
-          ...prev,
-          tags: [...prev.tags, tagInput.trim()],
-        }));
-        setTagInput("");
-      } else {
-        alert('Tag cannot be empty');
+    if (token) {
+      const userRole = jwt_decode(token)?.role;
+      setRole(userRole);
+      if (userRole === 'student') {
+        api.get('/student/completed_courses')
+           .then(r => setCompletedCourses(r.data.completed || []))
+           .catch(console.error);
+        api.get('/courses/prerequisites')
+           .then(r => {
+             const m = {};
+             r.data.forEach(i => m[i.course_id] = i.prereqs);
+             setPrerequisites(m);
+           })
+           .catch(console.error);
       }
     }
+    api.get('/courses/departments')
+       .then(r => setDepartments(r.data || []))
+       .catch(console.error);
+  }, []);
+
+  // when department selected, fetch its courses
+  useEffect(() => {
+    if (!selectedDepartment) return;
+    const ep = selectedDepartment === 'all'
+      ? '/courses'
+      : `/courses/department/${selectedDepartment}`;
+    api.get(ep)
+       .then(r => setCourses(r.data || []))
+       .catch(console.error);
+  }, [selectedDepartment]);
+
+  // check if student has prereqs
+  const checkPrereqs = id =>
+    (prerequisites[id] || []).every(p => completedCourses.includes(p));
+
+  // apply credits + prereq filters
+  const applyFilters = list =>
+    list
+      .filter(c => filters.credits.length === 0 || filters.credits.includes(c.credits))
+      .filter(c => !filters.prereqSatisfied || checkPrereqs(c.course_id));
+
+  // render departments list (filtered by inputQuery)
+  const renderDepartments = () => {
+    const q = inputQuery.toLowerCase();
+    const filtered = departments.filter(d =>
+      searchType === 'id'
+        ? String(d.id).toLowerCase().includes(q)
+        : (d.name || '').toLowerCase().includes(q)
+    );
+    return (
+      <ul style={{ listStyle: 'none', padding: 0 }}>
+        <li
+          onClick={() => { setSelectedDepartment('all'); setShowDepartments(false); }}
+          style={{
+            cursor: 'pointer',
+            padding: '8px',
+            backgroundColor: String(selectedDepartment) === 'all' ? '#e9ecef' : 'transparent',
+            borderRadius: '4px',
+            marginBottom: '5px'
+          }}
+        >
+          All Departments
+        </li>
+        {filtered.map(d => {
+          const did = String(d.id);
+          return (
+            <li
+              key={did}
+              onClick={() => { setSelectedDepartment(did); setShowDepartments(false); }}
+              style={{
+                cursor: 'pointer',
+                padding: '8px',
+                backgroundColor: selectedDepartment === did ? '#e9ecef' : 'transparent',
+                borderRadius: '4px',
+                marginBottom: '5px'
+              }}
+            >
+              {d.name || did}
+            </li>
+          );
+        })}
+        {filtered.length === 0 && <p>No departments match “{inputQuery}.”</p>}
+      </ul>
+    );
   };
 
-  const handleRemoveFromList = (type, index) => {
-    setFormData((prev) => ({
-      ...prev,
-      [type]: prev[type].filter((_, i) => i !== index),
-    }));
-  };
-
-  const handleChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Submitting new course:", formData);
-    // Add your API call or form handling logic here
-    api.post('/courses/add-course', formData)
-      .then((response) => {
-        console.log('Course added successfully:', response.data);
-        setShowForm(false); // Hide the form after submission
-        setFormData({
-          course_id: "",
-          name: "",
-          semester: "",
-          max_seats: "",
-          credits: "",
-          prerequisites: [],
-          description: "",
-          tags: [],
-        });
-        // Optionally, refresh the courses list or show a success message
-      })
-      .catch((error) => {
-        console.error('Error adding course:', error);
-      });
+  // render courses table (with filtering & search)
+  const renderCourses = () => {
+    let list = applyFilters(courses);
+    if (inputQuery.trim()) {
+      const q = inputQuery.toLowerCase();
+      list = list.filter(c =>
+        searchType === 'id'
+          ? String(c.course_id).toLowerCase().includes(q)
+          : c.name.toLowerCase().includes(q)
+      );
+    }
+    return (
+      <table style={{ width:'100%', borderCollapse:'collapse' }}>
+        <thead style={{ backgroundColor:'#f9f9f9' }}>
+          <tr>
+            <th style={headerStyle}>Course ID</th>
+            <th style={headerStyle}>Name</th>
+            <th style={headerStyle}>Description</th>
+            <th style={headerStyle}>Credits</th>
+            <th style={headerStyle}>Dept ID</th>
+          </tr>
+        </thead>
+        <tbody>
+          {list.map(c => (
+            <tr key={c.course_id}>
+              <td style={cellStyle}>
+                <a
+                  href="#"
+                  onClick={e => { e.preventDefault(); history.push(`/courses/${c.course_id}`); }}
+                  style={{ color:'#007bff', textDecoration:'underline' }}
+                >
+                  {c.course_id}
+                </a>
+              </td>
+              <td style={cellStyle}>{c.name}</td>
+              <td style={cellStyle}>{c.description}</td>
+              <td style={cellStyle}>{c.credits}</td>
+              <td style={cellStyle}>{c.department_id}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
   };
 
   return (
-    <div className="container">
-      <div className="card">
-        <h1 style={{ textAlign: 'center' }}>All Courses</h1>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead style={{ backgroundColor: '#f9f9f9' }}>
-            <tr>
-              <th style={{ border: '1px solid #ccc', padding: '10px' }}>Course ID</th>
-              <th style={{ border: '1px solid #ccc', padding: '10px' }}>Name</th>
-              <th style={{ border: '1px solid #ccc', padding: '10px' }}>Description</th>
-              <th style={{ border: '1px solid #ccc', padding: '10px' }}>Credits</th>
-              <th style={{ border: '1px solid #ccc', padding: '10px' }}>Department ID</th>
-            </tr>
-          </thead>
-          <tbody>
-            {courses.map((course) => (
-              <tr key={course.course_id}>
-                <td>
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleCourseClick(course.course_id);
-                    }}
-                    style={{ color: '#007bff', textDecoration: 'underline' }}
-                  >
-                    {course.course_id}
-                  </a>
-                </td>
-                <td style={{ border: '1px solid #ddd', padding: '10px' }}>{course.name}</td>
-                <td style={{ border: '1px solid #ddd', padding: '10px' }}>{course.description}</td>
-                <td style={{ border: '1px solid #ddd', padding: '10px' }}>{course.credits}</td>
-                <td style={{ border: '1px solid #ddd', padding: '10px' }}>{course.department_id}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-  
-        {role === 'admin' && (
-          <>
-            <button onClick={() => setShowForm(true)} style={{ marginTop: '16px' }}>
-              Add New Course
+    <div className="container" style={{ padding:'20px', maxWidth:'800px', margin:'0 auto' }}>
+      <div className="card" style={{ border:'1px solid #ddd', padding:'20px', borderRadius:'8px' }}>
+        <h1 style={{ textAlign:'center', marginBottom:'20px' }}>
+          {showDepartments ? 'Select a Department' : `Courses`}
+        </h1>
+
+        {/* Search bar & search-type dropdown */}
+        <div style={{ display:'flex', gap:'10px', marginBottom:'20px' }}>
+          <input
+            type="text"
+            placeholder={
+              showDepartments
+                ? `Search Departments by ${searchType==='id'?'ID':'Name'}`
+                : `Search Courses by ${searchType==='id'?'ID':'Name'}`
+            }
+            value={inputQuery}
+            onChange={e => setInputQuery(e.target.value)}
+            style={{ flex:1, padding:'8px', border:'1px solid #ccc', borderRadius:'4px' }}
+          />
+          <select
+            value={searchType}
+            onChange={e => setSearchType(e.target.value)}
+            style={{ width:'120px', padding:'8px', border:'1px solid #ccc', borderRadius:'4px' }}
+          >
+            <option value="id">{showDepartments?'Dept ID':'Course ID'}</option>
+            <option value="name">{showDepartments?'Dept Name':'Course Name'}</option>
+          </select>
+          {!showDepartments && (
+            <button
+              onClick={() => setShowFilter(f => !f)}
+              style={{ padding:'8px 16px', borderRadius:'4px', backgroundColor:'#28a745', color:'white', border:'none' }}
+            >
+              {showFilter ? 'Hide Filters' : 'Show Filters'}
             </button>
-  
-            {showForm && (
-              <form onSubmit={handleSubmit} style={{ marginTop: '16px', border: '1px solid #ccc', padding: '12px' }}>
-                <h3>Add New Course</h3>
-  
-                <div style={{ marginBottom: '8px' }}>
-                  <label>Course ID<span style={{ color: 'red' }}> *</span>: </label>
-                  <input type="text" name="course_id" value={formData.course_id} onChange={handleChange} required />
-                </div>
-  
-                <div style={{ marginBottom: '8px' }}>
-                  <label>Course Name<span style={{ color: 'red' }}> *</span>: </label>
-                  <input type="text" name="name" value={formData.name} onChange={handleChange} required />
-                </div>
-  
-                <div style={{ marginBottom: '8px' }}>
-                  <label>Semester: </label>
-                  <input type="number" name="semester" value={formData.semester} onChange={handleChange} />
-                </div>
-  
-                <div style={{ marginBottom: '8px' }}>
-                  <label>Max Seats<span style={{ color: 'red' }}> *</span>: </label>
-                  <input type="number" name="max_seats" value={formData.max_seats} onChange={handleChange} required />
-                </div>
-  
-                <div style={{ marginBottom: '8px' }}>
-                  <label>Credits<span style={{ color: 'red' }}> *</span>: </label>
-                  <input type="number" name="credits" value={formData.credits} onChange={handleChange} required />
-                </div>
-  
-                <div style={{ marginBottom: '8px' }}>
-                  <label>Prerequisites: </label>
-                  <input
-                    type="text"
-                    value={prereqInput}
-                    onChange={(e) => setPrereqInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddToList('prerequisites'))}
-                    placeholder="Enter and press Enter"
-                  />
-                  <div style={{ marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    {formData.prerequisites.map((item, index) => (
-                      <span
-                        key={index}
-                        style={{
-                          padding: '4px 8px',
-                          background: '#eee',
-                          borderRadius: '12px',
-                          display: 'flex',
-                          alignItems: 'center',
-                        }}
-                      >
-                        {item}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveFromList('prerequisites', index)}
-                          style={{ marginLeft: '6px', cursor: 'pointer', border: 'none', background: 'transparent' }}
-                        >
-                          ❌
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-  
-                <div style={{ marginBottom: '8px' }}>
-                  <label>Tags<span style={{ color: 'red' }}> *</span>: </label>
-                  <input
-                    type="text"
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddToList('tags'))}
-                    placeholder="Enter and press Enter"
-                  />
-                  <div style={{ marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    {formData.tags.map((item, index) => (
-                      <span
-                        key={index}
-                        style={{
-                          padding: '4px 8px',
-                          background: '#eee',
-                          borderRadius: '12px',
-                          display: 'flex',
-                          alignItems: 'center',
-                        }}
-                      >
-                        {item}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveFromList('tags', index)}
-                          style={{ marginLeft: '6px', cursor: 'pointer', border: 'none', background: 'transparent' }}
-                        >
-                          ❌
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-  
-                <div style={{ marginBottom: '8px' }}>
-                  <label>Description: </label>
-                  <textarea name="description" value={formData.description} onChange={handleChange} rows={3} />
-                </div>
-  
-                <button type="submit">Submit</button>
-                <button onClick={() => setShowForm(false)} style={{ marginLeft: '8px' }}>
-                  Cancel
-                </button>
-              </form>
-            )}
-          </>
+          )}
+          {!showDepartments && (
+            <button
+              onClick={() => {
+                setSelectedDepartment(null);
+                setShowDepartments(true);
+                setInputQuery('');
+                setSearchType('id');
+              }}
+              style={{
+                padding: '8px 16px',
+                marginLeft: '10px',
+                borderRadius: '4px',
+                backgroundColor: '#6c757d',
+                color: 'white',
+                border: 'none'
+              }}
+            >
+              Back to Departments
+            </button>
+          )}
+        </div>
+
+        {/* Filters panel only in course view */}
+        {!showDepartments && showFilter && (
+          <div style={{ border:'1px solid #ccc', padding:'15px', marginBottom:'20px', borderRadius:'4px', backgroundColor:'#f9f9f9' }}>
+            <h4>Credits</h4>
+            {[1,3,6,8].map(cr => (
+              <label key={cr} style={{ marginRight:'15px' }}>
+                <input
+                  type="checkbox"
+                  checked={filters.credits.includes(cr)}
+                  onChange={() => setFilters(f => ({
+                    ...f,
+                    credits: f.credits.includes(cr)
+                      ? f.credits.filter(x=>x!==cr)
+                      : [...f.credits,cr]
+                  }))}
+                /> {cr}
+              </label>
+            ))}
+            <div style={{ marginTop:'10px' }}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={filters.prereqSatisfied}
+                  onChange={() => setFilters(f => ({ ...f, prereqSatisfied: !f.prereqSatisfied }))}
+                /> Only show courses with satisfied prereqs
+              </label>
+            </div>
+          </div>
         )}
-  
-        <p>
-          <Link to="/dashboard">Back to Dashboard</Link>
+
+        {/* Department list or Courses table */}
+        {showDepartments
+          ? renderDepartments()
+          : <div style={{ marginTop:'20px' }}>{renderCourses()}</div>
+        }
+
+        <p style={{ marginTop:'20px' }}>
+          <Link to="/dashboard" style={{ color:'#007bff', textDecoration:'none' }}>
+            Back to Dashboard
+          </Link>
         </p>
       </div>
     </div>
   );
-};
+}
 
 export default Courses;
