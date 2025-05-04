@@ -7,10 +7,11 @@ from datetime import datetime
 
 register_bp = Blueprint('register', __name__)
 
+# get personal details of the user that they filled during registration. Applicable only for students and instructors
 @register_bp.route('/personal-details', methods=['GET'])
 # @jwt_required()
 def get_personal_details():
-    # print("HEADERS:", dict(request.headers))
+
     verify_jwt_in_request()
     user_id = get_jwt_identity()
     user_role = get_jwt()['role']
@@ -46,22 +47,20 @@ def get_personal_details():
             "Research Areas": query.research_areas
         }), 200
     else:
-        return jsonify({"msg": "Invalid role"}), 400
+        return jsonify({"msg": "Invalid role"}), 400 #this is technically admin, but admin should not be able to access this endpoint
     
 
-
+#registering a new user, diff fields for student and instructor
 @register_bp.route('', methods=['POST'])
 @jwt_required()
 def register():
-    # print("Headers received:", dict(request.headers)) 
+    
     try:
         """Register a new user."""
         data = request.get_json()
-        # print("Data received: ", data)
         verify_jwt_in_request()
         user_id = get_jwt_identity()
         user_role = get_jwt()['role']
-        # print("Current user: ", user_id, "Role: ", user_role)
         
         if not data or 'program' not in data or 'department' not in data or 'year_of_admission' not in data:
             return jsonify({"msg": "Missing required fields"}), 400

@@ -9,7 +9,7 @@ from sqlalchemy import and_, or_
 from werkzeug.exceptions import HTTPException
 import traceback
 
-# Helper function to get the current semester ID
+# Helper function to get the current semester ID, ideally should be set as a fixed number perhaps in .env? abhi just taking max sem_id
 def get_current_semester_id():
     current_semester = Semester.query.order_by(Semester.start_date.desc()).first()
     return current_semester.semester_id if current_semester else None
@@ -17,24 +17,24 @@ def get_current_semester_id():
 
 register_courses_bp = Blueprint('register_courses', __name__)
 
+#get course information about a particular course code. Called during registrationn when student selects a course from the drop down
 @register_courses_bp.route('/get_course/<course_code>', methods=['GET'])
 @jwt_required()
 def get_course_offerings(course_code):
-    # print("Fetching course offerings for course code:", course_code)
+
     course = Course.query.filter_by(course_id=course_code).first()
     if not course:
         return jsonify({'error': 'Course not found'}), 404
-    # print("course 1:", course_code)
-    offering = CourseOffering.query.filter_by(course_id=course.course_id).first()
+
+    offering = CourseOffering.query.filter_by(course_id=course.course_id).first() #is the course running this semester?
     if not offering:
         return jsonify({'error': 'No offerings found for this course'}), 404
-    # print("course 2:", course_code)
+
     instr = Instructor.query.get(offering.instructor_id)
     user = User.query.get(instr.user_id)
     sem = Semester.query.get(offering.semester_id)
-    # print("course details")
-    # print(course.course_id, course.name, course.credits)
-    return jsonify({
+
+    return jsonify({ #return the relevant data
         'course_id':   course.course_id,
         'course_name': course.name,
         'credits':     course.credits,
@@ -47,6 +47,7 @@ def get_course_offerings(course_code):
         'current_seats': offering.current_seats
     }), 200
 
+#check eligibility, whether a student can register for a course or not. Called when the student selects a course from the drop down and clicks on register. Vestigial code, this function is not called
 @register_courses_bp.route('/check/<course_id>', methods=['GET'])
 def check_eligibility(course_id):
     verify_jwt_in_request()
@@ -71,40 +72,48 @@ def check_eligibility(course_id):
     ).count()
 
     prereq_completed = incomplete_prereqs == 0
-
+    #ensure student has not passed the course before
     passed_before = CompletedCourse.query.filter_by(student_id=student_id, course_id=course_id, status='passed').first()
     if passed_before:
         return jsonify({'allowed': False, 'reason': 'Already completed this course successfully'}), 200
     
 
-    # if not prereq_completed:
-    #     return jsonify({'allowed': False, 'reason': 'Missing prerequisites'}), 200
+    if not prereq_completed or passed_before:
+        return jsonify({'allowed': False, 'reason': 'Missing prerequisites, or passed before'}), 200
 
     return jsonify({'allowed': True, 'reason': ''}), 200
 
-#dept check karna bhool gayi rip
+#checks for allowed tags
 @register_courses_bp.route('/tags/<course_id>', methods=['GET'])
 @jwt_required()
 def get_tags(course_id):
-    # print("Fetching tags for course ID:", course_id)
+
     user_id = get_jwt_identity()
     student = Student.query.filter_by(user_id=user_id).first()
-    # print("1Fetching tags for course ID:", course_id, user_id, student)
+
     if not student:
         return jsonify({'error': 'Student not found'}), 404
-    # print("2Fetching tags for course ID:", course_id)
+
     student_id = student.student_id
     student_dept = student.department_id
-    allowed_tags = db.session.query(Tag).join(AllowedTag, AllowedTag.tag_id == Tag.tag_id).filter(
-        and_(
-            AllowedTag.course_id == course_id,
-            AllowedTag.department_id == student_dept,
-        )
+    # Step 1: Get tag IDs from AllowedTag
+    allowed_tag_ids = db.session.query(AllowedTag.tag_id).filter_by(
+        course_id=course_id,
+        department_id=student_dept
     ).all()
-    # print("3Fetching tags for course ID:", course_id)
+
+    # allowed_tag_ids is a list of tuples, so extract the actual IDs
+    tag_ids = [tag_id for (tag_id,) in allowed_tag_ids]
+
+    # Step 2: Fetch Tags using the IDs
+    allowed_tags = db.session.query(Tag).filter(Tag.tag_id.in_(tag_ids)).all()
+
+    # Optional: Extract names
     tags = [taggo.name for taggo in allowed_tags]
+
     return jsonify({'tags': tags}), 200
 
+#get registration status of a student. Seen on the registration page, as a list of registered and waitlisted courses
 @register_courses_bp.route('/status', methods=['GET'])
 @jwt_required()
 def registration_status():
@@ -146,6 +155,7 @@ def registration_status():
 
     return jsonify(out), 200
 
+#Confirm Registration button clicked, this called. 
 @register_courses_bp.route('/register', methods=['POST'])
 @jwt_required()
 def register_course():
@@ -185,7 +195,8 @@ def register_course():
         db.session.add(w)
         db.session.commit()
         return jsonify({'status': 'waitlisted', 'position': pos}), 200
-    
+
+#when drop button clicked, this is called.
 @register_courses_bp.route('/<int:offering_id>', methods=['DELETE'])
 @jwt_required()
 def drop_course(offering_id):
@@ -223,7 +234,7 @@ def drop_course(offering_id):
             for w in rest: w.position -= 1
 
         db.session.commit()
-        return '', 204
+        return 'dropped successfully', 204
 
     # 2) Else if waitlisted → remove and re-index
     w = Waitlist.query.filter_by(student_id=sid, offering_id=offering_id).first()
@@ -236,10 +247,11 @@ def drop_course(offering_id):
         ).all()
         for r in rest: r.position -= 1
         db.session.commit()
-        return '', 204
+        return 'removed from waitlist', 204
 
     return jsonify({'error': 'Not enrolled or waitlisted'}), 404
 
+#called during registration when student wants to change tag. Pushed to bottom of registration list / waitlist
 @register_courses_bp.route('/<int:offering_id>', methods=['PUT'])
 @jwt_required()
 def change_tag(offering_id):
@@ -341,14 +353,14 @@ def change_tag(offering_id):
             'position': new_position
         }), 200
 
+#search functionality for courses. Called when user types in the search bar on the registration page
 @register_courses_bp.route('/search', methods=['GET'])
 @jwt_required()
 def search_courses():
-    # print("Searching for courses")
+
     q = request.args.get('query', '').strip()
     if not q:
         return jsonify([]), 200
-    # print("Query:", q)
 
     # find up to 10 matching courses by code or name prefix
     courses = (Course.query
@@ -360,12 +372,11 @@ def search_courses():
                )
                .limit(10)
                .all())
-    # print("Courses found:", len(courses))
+
     suggestions = []
     for c in courses:
         off = c.offerings.filter_by(semester_id=get_current_semester_id()).first()
         if not off:
-            # this course simply isn’t offered right now
             continue
 
         suggestions.append({
@@ -377,11 +388,11 @@ def search_courses():
 
     return jsonify(suggestions), 200
 
+#get all course offerings for the current semester
 @register_courses_bp.route('/offerings', methods=['GET'])
 # @jwt_required()
 def get_offerings():
 
-    # print("Fetching all course offerings")
     # Get all course offerings for the current semester
     current_semester = Semester.query.order_by(Semester.start_date.desc()).first()
     offerings = CourseOffering.query.filter_by(semester_id=current_semester.semester_id).all()
@@ -403,7 +414,6 @@ def get_offerings():
             'max_seats':     offering.max_seats,
             'current_seats': offering.current_seats
         })
-    # print("Number of offerings:", len(response_data))
     return jsonify(response_data), 200
 
 
