@@ -26,9 +26,6 @@ const Signup = () => {
 
     try {
       const response = await api.post('/auth/signup', formData);
-      console.log("Ye mila hai", response);
-      console.log("Ye mila hai", response.data);
-      console.log("Okay");
       const { access_token, user } = response.data;
       if (!access_token) {
         setError('Access token not found in response');

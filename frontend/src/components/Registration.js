@@ -162,6 +162,18 @@ const Registration = () => {
         </div>
       </div>
     );
+  }
+  else if (userRole === 'admin'){
+    // simply take to admin dashboard
+    return (
+      <div className="container">
+        <div className="card">
+          <h2>Admin Registration</h2>
+          <p>Admin registration is not required. Proceed to the admin dashboard.</p>
+          <Link to="/dashboard">Go to Admin Dashboard</Link>
+        </div>
+      </div>
+    );
   } else {
     return (
       <div className="container">
