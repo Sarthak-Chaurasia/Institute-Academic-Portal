@@ -78,6 +78,15 @@ CREATE TABLE course_offerings (
     CONSTRAINT uq_course_semester UNIQUE (course_id, semester_id)
 );
 
+CREATE TABLE tasks (
+    task_id SERIAL PRIMARY KEY,
+    offering_id INTEGER REFERENCES course_offerings(offering_id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    max_marks FLOAT NOT NULL,
+    release_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    due_date TIMESTAMP NOT NULL
+);
+
 -- Enrollments table
 CREATE TABLE enrollments (
     enrollment_id SERIAL PRIMARY KEY,
@@ -85,9 +94,16 @@ CREATE TABLE enrollments (
     offering_id INT NOT NULL REFERENCES course_offerings(offering_id) ON DELETE CASCADE,
     status VARCHAR(20) NOT NULL CHECK (status IN ('enrolled', 'dropped')),
     enrollment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    tag VARCHAR(50)
-    marks FLOAT CHECK (marks >= 0 AND marks <= 100),
-    attendance FLOAT CHECK (attendance >= 0 AND attendance <= 100),
+    tag VARCHAR(50),
+    attendance INT CHECK (attendance >= 0 AND attendance <= 100)
+);
+
+CREATE TABLE task_marks (
+    taskmark_id SERIAL PRIMARY KEY,
+    enrollment_id INTEGER REFERENCES enrollments(enrollment_id) ON DELETE CASCADE,
+    task_id INTEGER REFERENCES tasks(task_id) ON DELETE CASCADE,
+    marks_obtained FLOAT,
+    UNIQUE (enrollment_id, task_id)
 );
 
 -- Table for Tags

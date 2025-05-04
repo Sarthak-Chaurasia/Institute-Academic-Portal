@@ -1,5 +1,5 @@
 -- Clear existing data and reset sequences
-TRUNCATE audit_logs, course_reviews, prerequisites, grades, waitlists, enrollments, course_offerings, semesters, instructors, students, users, courses, departments, Tag, AllowedTags RESTART IDENTITY CASCADE;
+TRUNCATE audit_logs, course_reviews, prerequisites, grades, waitlists, enrollments, course_offerings, tasks, task_marks, semesters, instructors, students, users, courses, departments, Tag, AllowedTags RESTART IDENTITY CASCADE;
 
 -- Departments
 INSERT INTO departments(department_id, name) VALUES
@@ -241,6 +241,8 @@ SELECT setval(pg_get_serial_sequence('departments','department_id'), COALESCE(MA
 -- SELECT setval(pg_get_serial_sequence('courses','course_id'), COALESCE(MAX(course_id),0)+1, false) FROM courses;
 SELECT setval(pg_get_serial_sequence('semesters','semester_id'), COALESCE(MAX(semester_id),0)+1, false) FROM semesters;
 SELECT setval(pg_get_serial_sequence('course_offerings','offering_id'), COALESCE(MAX(offering_id),0)+1, false) FROM course_offerings;
+SELECT setval(pg_get_serial_sequence('tasks', 'task_id'), COALESCE(MAX(task_id), 0)+1, false) FROM tasks;
+SELECT setval(pg_get_serial_sequence('task_marks', 'taskmark_id'), COALESCE(MAX(taskmark_id), 0)+1, false) FROM task_marks;
 SELECT setval(pg_get_serial_sequence('enrollments','enrollment_id'), COALESCE(MAX(enrollment_id),0)+1, false) FROM enrollments;
 SELECT setval(pg_get_serial_sequence('waitlists','waitlist_id'), COALESCE(MAX(waitlist_id),0)+1, false) FROM waitlists;
 SELECT setval(pg_get_serial_sequence('grades','grade_id'), COALESCE(MAX(grade_id),0)+1, false) FROM grades;

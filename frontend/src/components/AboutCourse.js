@@ -32,6 +32,7 @@ function AboutCourse() {
     api.get(`/courses/${courseId}`)
       .then((res) => setCourse(res.data))
       .catch((err) => console.error('Error loading course', err));
+    // api.get(`/courses/tasks?course_id=${courseId}`)
   }, []);
 
   const [showForm, setShowForm] = useState(false);
@@ -170,8 +171,7 @@ function AboutCourse() {
     // Add your logic here
   };
   const handleTasksAndDeadline = () => {
-    console.log("Tasks and Deadline button clicked");
-    // Add your logic here
+    history.push(`/tasks-marks/${courseId}`);
   };
   const handleEnrollmentAction = (student_id, action) => {
     if (action === "DAC"){
@@ -312,12 +312,6 @@ function AboutCourse() {
       >
         Grade
       </button>
-      {/* <button
-        style={{ backgroundColor: "green", color: "white", padding: "10px 20px", margin: "5px", border: "none", cursor: "pointer" }}
-        onClick={handleEditPrerequisites}
-      >
-        Edit Prerequisites
-      </button> */}
 
       {showEditPrereq && (
         <div style={{ marginTop: "10px" }}>

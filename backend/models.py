@@ -50,7 +50,6 @@ class Department(db.Model):
     instructors = db.relationship('Instructor', backref='department', lazy='dynamic', cascade="all, delete-orphan")
     students = db.relationship('Student', backref='department', lazy='dynamic', cascade="all, delete-orphan")
 
-
 class Student(db.Model):
     __tablename__ = 'students'
 
@@ -107,7 +106,6 @@ class Student(db.Model):
         nn = f"{count + 1:02d}"
 
         return f"{yy}{p}{dd}{nn}"
-
 
 class Instructor(db.Model):
     __tablename__ = 'instructors'
@@ -249,9 +247,6 @@ class Course(db.Model):
                         tag_id=tag.tag_id
                     ))
 
-
-
-
 class Semester(db.Model):
     __tablename__ = 'semesters'
 
@@ -261,7 +256,6 @@ class Semester(db.Model):
     end_date = db.Column(db.Date, nullable=False)
     add_deadline = db.Column(db.Date, nullable=False)
     drop_deadline = db.Column(db.Date, nullable=False)
-
 
 class CourseOffering(db.Model):
     __tablename__ = 'course_offerings'
@@ -292,6 +286,56 @@ class CourseOffering(db.Model):
             'current_seats': self.current_seats
         }
 
+class Task(db.Model):
+    __tablename__ = 'tasks'
+
+    task_id = db.Column(db.Integer, primary_key=True)
+    offering_id = db.Column(db.Integer, db.ForeignKey('course_offerings.offering_id', ondelete='CASCADE'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    max_marks = db.Column(db.Float, nullable=False)
+    release_date = db.Column(db.DateTime,server_default=db.func.current_timestamp())
+    due_date = db.Column(db.DateTime, nullable=False)
+
+    offering = db.relationship('CourseOffering', backref='tasks')
+
+    def to_dict(self):
+        return {
+            'task_id': self.task_id,
+            'offering_id': self.offering_id,
+            'name': self.name,
+            'max_marks': self.max_marks,
+            'release_date': self.release_date,
+            'due_date': self.due_date
+        }
+    
+    __table_args__ = (
+        db.UniqueConstraint('offering_id', 'name', name='uix_offering_name'),
+        db.CheckConstraint('max_marks > 0', name='check_max_marks_positive'),
+        db.CheckConstraint('due_date > release_date', name='check_due_after_release'),
+    )
+
+class TaskMark(db.Model):
+    __tablename__ = 'task_marks'
+
+    taskmark_id = db.Column(db.Integer, primary_key=True)
+    enrollment_id = db.Column(db.Integer, db.ForeignKey('enrollments.enrollment_id', ondelete='CASCADE'), nullable=False)
+    task_id = db.Column(db.Integer, db.ForeignKey('tasks.task_id', ondelete='CASCADE'), nullable=False)
+    marks_obtained = db.Column(db.Float, nullable=True)
+
+    __table_args__ = (
+        db.UniqueConstraint('enrollment_id', 'task_id', name='uix_enrollment_task'),
+    )
+
+    def to_dict(self):
+        return {
+            'taskmark_id': self.taskmark_id,
+            'enrollment_id': self.enrollment_id,
+            'task_id': self.task_id,
+            'marks_obtained': self.marks_obtained
+        }
+
+    enrollment = db.relationship('Enrollment', backref='task_marks')
+    task = db.relationship('Task', backref='marks')
 
 class Enrollment(db.Model):
     __tablename__ = 'enrollments'
@@ -302,8 +346,7 @@ class Enrollment(db.Model):
     status = db.Column(db.String(20), nullable=False)
     enrollment_date = db.Column(db.DateTime, server_default=db.func.current_timestamp())
     tag = db.Column(db.String(50), nullable=True)
-    # marks = db.Column(db.Float, nullable=True)  # New field for marks
-    # attendance = db.Column(db.Float, nullable=True)  # New field for attendance
+    attendance = db.Column(db.Float, nullable=True)  # New field for attendance
 
     __table_args__ = (
         db.CheckConstraint("status IN ('enrolled', 'dropped')", name='check_status_valid'),
@@ -318,7 +361,6 @@ class Enrollment(db.Model):
             'enrollment_date': self.enrollment_date,
             'tag': self.tag
         }
-
 
 class Waitlist(db.Model):
     __tablename__ = 'waitlists'
@@ -339,7 +381,6 @@ class Waitlist(db.Model):
             'timestamp': self.timestamp
         }
 
-
 class Grade(db.Model):
     __tablename__ = 'grades'
 
@@ -351,7 +392,6 @@ class Grade(db.Model):
     __table_args__ = (
         db.CheckConstraint("grade IN ('A', 'B', 'C', 'D', 'F')", name='check_grade_values'),
     )
-
 
 class Prerequisite(db.Model):
     __tablename__ = 'prerequisites'
@@ -383,7 +423,6 @@ class CourseReview(db.Model):
         db.CheckConstraint('rating BETWEEN 1 AND 5', name='check_rating_range'),
     )
 
-
 class AuditLog(db.Model):
     __tablename__ = 'audit_logs'
 
@@ -398,7 +437,6 @@ class Tag(db.Model):
 
     tag_id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
-
 
 class CompletedCourse(db.Model):
     __tablename__ = 'completed_courses'
@@ -431,4 +469,3 @@ class AllowedTag(db.Model):
             'tag_id': self.tag_id
         }
     
-
