@@ -168,7 +168,7 @@ function AboutCourse() {
   };
   const handleMoodleAnnouncement = () => {
     console.log("Moodle Announcement button clicked");
-    // Add your logic here
+    return history.push('/announcement');
   };
   const handleTasksAndDeadline = () => {
     history.push(`/tasks-marks/${courseId}`);
