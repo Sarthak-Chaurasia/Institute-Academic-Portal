@@ -52,6 +52,8 @@ def create_app():
     from routes.courses import courses_bp
     from routes.register import register_bp
     from routes.register_courses import register_courses_bp
+    from routes.student_courses import student_courses_bp
+    app.register_blueprint(student_courses_bp, url_prefix='/api/')
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(courses_bp, url_prefix='/api/courses')
     app.register_blueprint(register_bp, url_prefix='/api/register')
