@@ -18,7 +18,7 @@ function AboutCourse() {
 
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (token) {
       const decoded = jwt_decode(token);
       const user_id = parseInt(decoded?.sub);

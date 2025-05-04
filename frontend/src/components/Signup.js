@@ -34,7 +34,7 @@ const Signup = () => {
         setError('Access token not found in response');
         return;
       }
-      localStorage.setItem('token', access_token);
+      sessionStorage.setItem('token', access_token);
       try {
         const decoded = jwt_decode(access_token);
         const role = decoded?.role;

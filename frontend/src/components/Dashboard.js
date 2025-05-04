@@ -8,7 +8,7 @@ function Dashboard() {
   const [role, setRole] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (token) {
       const decoded = jwt_decode(token);
       console.log('Decoded JWT:', decoded);

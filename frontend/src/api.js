@@ -8,11 +8,11 @@ const api = axios.create({
 
 // Utility functions
 export const isRegistered = () => {
-  return !!localStorage.getItem('token');  // checks if access token exists
+  return !!sessionStorage.getItem('token');  // checks if access token exists
 };
 
 export const isUser = () => {
-  return !!localStorage.getItem('token');
+  return !!sessionStorage.getItem('token');
 };
 
 // Warn against using default axios methods
@@ -27,7 +27,7 @@ export const isUser = () => {
 // Request interceptor: attach access token
 api.interceptors.request.use(
   (config) => {
-    const accessToken = localStorage.getItem('token');
+    const accessToken = sessionStorage.getItem('token');
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
       
@@ -48,7 +48,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        const refreshToken = localStorage.getItem('refresh_token');
+        const refreshToken = sessionStorage.getItem('refresh_token');
         if (!refreshToken) throw new Error('No refresh token available');
 
         // Call refresh endpoint
@@ -59,7 +59,7 @@ api.interceptors.response.use(
         );
 
         // Store new access token
-        localStorage.setItem('token', data.access_token);
+        sessionStorage.setItem('token', data.access_token);
 
         // Update original request header
         originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
@@ -69,8 +69,8 @@ api.interceptors.response.use(
       } catch (refreshError) {
         console.error('Refresh token failed:', refreshError);
         // Clear tokens and redirect to login
-        localStorage.removeItem('token');
-        localStorage.removeItem('refresh_token');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('refresh_token');
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }

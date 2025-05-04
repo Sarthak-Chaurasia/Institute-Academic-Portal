@@ -18,16 +18,16 @@ function Login() {
       //print response data to console
       console.log('Login response:', response.data);
       if(response.data.access_token){
-        localStorage.setItem('token', response.data.access_token);
-        localStorage.setItem('refresh_token', response.data.refresh_token);
-        console.log('Token stored in localStorage:', response.data.access_token);
+        sessionStorage.setItem('token', response.data.access_token);
+        sessionStorage.setItem('refresh_token', response.data.refresh_token);
+        console.log('Token stored in sessionStorage:', response.data.access_token);
       }
       else{
         setError('Access token not found in response');
         console.error('Access token not found in response');
         return;
       }
-      localStorage.setItem('registered', true);
+      sessionStorage.setItem('registered', true);
       history.push('/dashboard');
     } catch (error) {
       console.error('Login failed', error);

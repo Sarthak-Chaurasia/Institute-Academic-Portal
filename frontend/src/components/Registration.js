@@ -22,7 +22,7 @@ const Registration = () => {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (token) {
       const decoded = jwt_decode(token);
       const user_id = parseInt(decoded?.sub);
@@ -45,7 +45,7 @@ const Registration = () => {
       const response = await api.post('/register', formData);
       alert('Registration successful!');
       console.log(response.data);
-      localStorage.setItem('registered', true);
+      sessionStorage.setItem('registered', true);
       history.push('/dashboard');
     } catch (error) {
       setMessage(error.response?.data?.msg || 'An error occurred during registration');

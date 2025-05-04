@@ -12,7 +12,7 @@ function TasksMarks() {
   const [showAddForm, setShowAddForm] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (token) {
       const decoded = jwt_decode(token);
       setRole(decoded?.role);

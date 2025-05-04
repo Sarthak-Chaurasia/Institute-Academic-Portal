@@ -7,7 +7,7 @@ const PersonalDetails = () => {
   const [details, setStudentDetails] = useState({});
   const [userRole, setRole] = useState('');
       useEffect(() => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         if (token) {
           const decoded = jwt_decode(token);
           console.log('Decoded JWT:', decoded);

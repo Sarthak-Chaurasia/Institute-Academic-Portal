@@ -24,7 +24,7 @@ function Courses() {
 
   // on mount: fetch departments + student data if needed
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (token) {
       const userRole = jwt_decode(token)?.role;
       setRole(userRole);

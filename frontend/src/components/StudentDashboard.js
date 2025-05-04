@@ -5,8 +5,8 @@ import { Link } from 'react-router-dom';
 // import { useHistory } from 'react-router-dom';
 
 function handleLogout() {
-  localStorage.removeItem('token');
-  localStorage.removeItem('registered');
+  sessionStorage.removeItem('token');
+  sessionStorage.removeItem('registered');
   window.location.href = '/login'; // Redirect to the login page
 }
 
