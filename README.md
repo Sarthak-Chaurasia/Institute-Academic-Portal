@@ -2,7 +2,7 @@
 22B0930: Mrinal Garg \
 22B1068: Tanishka Kabra \
 22B1016: Jahnvi Shaw \
-22B1014: Sarthak Chaurasia 
+22B1014: Sarthak Chaurasia (Previously contributed as user smallDbigD)
 
 What has been done up until now:
 - The backend is in Flask
